@@ -66,7 +66,7 @@ async def websocket_chat(websocket: WebSocket):
                     for i in range(len(partial_message), len(response_message), chunk_size):
                         partial_message += response_message[i:i+chunk_size]
                         await websocket.send_json({"response": partial_message, "agentType": key})
-                        await asyncio.sleep(0.001)  # 타이핑 딜레이
+                        await asyncio.sleep(0.1)  # 타이핑 딜레이
                 partial_message = ""
 
 
