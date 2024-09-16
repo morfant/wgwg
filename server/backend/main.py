@@ -1,5 +1,6 @@
 # main.py
 
+import random
 import os
 import re
 # import json
@@ -11,6 +12,8 @@ from agent import get_graph  # 에이전트 가져오기
 from langchain_core.messages import AIMessage
 from langchain_core.runnables.config import RunnableConfig
 from pythonosc import udp_client
+
+synth_list = []
 
 # SuperCollider가 실행 중인 로컬 서버와 포트
 client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
@@ -34,6 +37,7 @@ researcher_index = 0
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
     global researcher_index  # 전역 변수로서 접근을 명시
+    global synth_list
 
     await websocket.accept()
 
@@ -80,6 +84,7 @@ async def websocket_chat(websocket: WebSocket):
 
                 
                 # SC 파일에 대한 처리
+                # SynthDef
                 if response_message.startswith("```supercollider") and response_message.endswith("```"):
                     response_message = response_message[len("```supercollider"):].strip("```").strip()
 
@@ -111,13 +116,40 @@ async def websocket_chat(websocket: WebSocket):
                     # with open("sc_code.py", "w") as py_file:
                         # py_file.write(f'SC_CODE = """{sc_code}"""')
 
-                    # OSC 메시지 전송
+                    # OSC 메시지 전송 - SynthDef 등
                     client.send_message("/runCode", sc_code)
 
                     # 0.1초 대기
                     await asyncio.sleep(0.1)
 
-                    client.send_message("/playCode", filename.split('.')[0])
+                    # 랜덤으로 전송할 횟수 결정 (1에서 5 사이의 값)
+                    num_messages = random.randint(1, 5)
+                    print("num of sound: ", num_messages)
+    
+                    synth_name = filename.split('.')[0]
+                    for _ in range(num_messages):
+                        # OSC 메시지 전송 - 소리내기
+                        client.send_message("/playCode", synth_name)
+                        wait_time = random.uniform(0.1, 0.3)
+                        print("wait time: ", wait_time)
+                        await asyncio.sleep(wait_time)  # 0.1초 대기
+                    
+
+                    client.send_message("/playCode", synth_name)
+
+                    # 서버에 등록된 synthdef 이름을 리스트에 저장
+                    # 리스트를 set으로 변환하여 중복 제거
+                    synth_set = set(synth_list)
+
+                    # 새로운 문자열 추가
+                    synth_set.add(synth_name)
+
+                    # 다시 리스트로 변환
+                    synth_list = list(synth_set)
+
+                    
+
+
 
 
 
