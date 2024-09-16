@@ -13,6 +13,8 @@ yarn serve
 
 ## backend
 
+cd server/backend
+
 python main.py
 
 or
