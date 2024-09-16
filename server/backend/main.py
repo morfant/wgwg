@@ -79,6 +79,7 @@ async def websocket_chat(websocket: WebSocket):
                 partial_message = ""
 
                 
+                # SC 파일에 대한 처리
                 if response_message.startswith("```supercollider") and response_message.endswith("```"):
                     response_message = response_message[len("```supercollider"):].strip("```").strip()
 
