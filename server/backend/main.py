@@ -148,9 +148,22 @@ async def websocket_chat(websocket: WebSocket):
                     synth_list = list(synth_set)
 
                     
+                # response_message가 'Pbind'로 시작하는 경우 처리
+                if response_message.startswith("Pbind"):
+                    response_lines = response_message.splitlines()
+                    
+                    # 전체 코드 포함
+                    sc_code = "\n".join(response_lines).strip()
+                    print("sc_code_pat: ", sc_code)
+                    
+                    # synth_list가 비어 있는지 확인하고, 비어 있으면 'default' 사용
+                    if not synth_list:
+                        synth_name = 'default'
+                    else:
+                        synth_name = random.choice(synth_list)
 
-
-
+                    # OSC 메시지 전송 - 모든 코드를 /patCode로 전송
+                    client.send_message("/patCode", [sc_code, synth_name])
 
 
                 await websocket.send_json({"response": "[END]", "agentType": key})
