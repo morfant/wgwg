@@ -70,7 +70,7 @@
 
 	limitedSignal = Limiter.ar(In.ar(100), ceil, relTime);
 
-	Out.ar(0, limitedSignal * amp);
+	Out.ar(0, Pan2.ar(limitedSignal, 0, amp));
 }.play;
 
 )
