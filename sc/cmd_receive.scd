@@ -12,7 +12,7 @@
     // 수신된 코드를 실행
 	code.interpretPrint;  // SuperCollider 명령으로 해석하고 실행
 
-}, '/runCode', recvPort: 57120);  // 메시지를 받을 주소와 포트 설정
+}, '/registerSynth', recvPort: 57120);  // 메시지를 받을 주소와 포트 설정
 
 
 // OSC 메시지를 수신하고 해석하여 실행하는 OSCFunc 설정
@@ -25,12 +25,27 @@
 	synthName.postln;  // 코드 출력 (디버깅용)
 	Synth(synthName);  // 해당 SynthDef의 이름으로 Synth 인스턴스 생성
 
-}, '/playCode', recvPort: 57120);  // 메시지를 받을 주소와 포트 설정
+}, '/playSynth', recvPort: 57120);  // 메시지를 받을 주소와 포트 설정
 
 
-// Pattern + instrument 등록, 실행
+/*
+// Pattern(Pdef) 등록
 ~of3.free;
 ~of3 = OSCdef(\cmd_revc3, { |msg, time, addr, port|
+    // msg 배열의 첫 번째 요소를 코드로 해석
+	var pat, code = msg[1];
+
+	("code: " + code).postln;
+	code = code.asString;
+	code.interpretPrint;  // SuperCollider 명령으로 해석하고 실행
+
+}, '/registerPattern', recvPort: 57120);  // 메시지를 받을 주소와 포트 설정
+*/
+
+
+// Pattern + instrument 실행
+~of4.free;
+~of4 = OSCdef(\cmd_revc4, { |msg, time, addr, port|
     // msg 배열의 첫 번째 요소를 코드로 해석
 	var pat, code = msg[1], synth = msg[2];  // 메시지의 첫 번째 인자
 
@@ -43,9 +58,12 @@
 
 	(pat <> (instrument: synth)).play;
 
-}, '/patCode', recvPort: 57120);  // 메시지를 받을 주소와 포트 설정
+
+
+}, '/playPattern', recvPort: 57120);  // 메시지를 받을 주소와 포트 설정
 )
 
 
 
+s.dumpOSC(1); // 0: off, 1: on-parsed, 2: on-hex, 3: on-both
 s.dumpOSC(0); // 0: off, 1: on-parsed, 2: on-hex, 3: on-both
