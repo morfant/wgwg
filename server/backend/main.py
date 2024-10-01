@@ -92,7 +92,7 @@ async def websocket_chat(websocket: WebSocket):
 
                 # SynthDef
                 # response_message가 '// Synthdef'로 시작하는 경우 처리
-                if response_message.startswith("// Synthdef"):
+                if response_message.startswith("// SynthDef"):
                     response_lines = response_message.splitlines()
                     
                     # 두 번째 줄에서 '//' 뒤의 내용을 파일 이름으로 사용
@@ -128,8 +128,8 @@ async def websocket_chat(websocket: WebSocket):
 
                     # 소리 반복 시키기
                     # 랜덤으로 전송할 횟수 결정 (1에서 5 사이의 값)
-                    num_messages = random.randint(1, 5)
-                    print("num of sound: ", num_messages)
+                    # num_messages = random.randint(1, 5)
+                    # print("num of sound: ", num_messages)
     
                     # for _ in range(num_messages):
                     #     # OSC 메시지 전송 - 소리내기
@@ -139,6 +139,7 @@ async def websocket_chat(websocket: WebSocket):
                     #     await asyncio.sleep(wait_time)  # 0.1초 대기
                     
 
+                    # 소리 내기
                     client.send_message("/playSynth", synth_name)
 
                     # 서버에 등록된 synthdef 이름을 리스트에 저장
