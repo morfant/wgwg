@@ -13,7 +13,8 @@
     "jspdf": "^2.5.1",
     "marked": "^14.0.0",
     "remarkable": "^2.0.1",
-    "vue": "^3.2.13"
+    "vue": "^3.2.13",
+    "vue-slider-component": "^4.1.0-beta.7"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",

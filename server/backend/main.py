@@ -7,6 +7,8 @@ import re
 import pprint
 # from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.websockets import WebSocketState  # WebSocketState 임포트
+
 import asyncio
 from agent import get_graph  # 에이전트 가져오기
 from langchain_core.messages import AIMessage
@@ -25,6 +27,10 @@ if not os.path.exists(save_directory):
     os.makedirs(save_directory)
 
 app = FastAPI()
+
+# 웹소켓 클라이언트 목록
+sc_clients = []  # /ws/sc에 연결된 클라이언트 목록
+
 # 정적 파일 경로를 '/static'으로 설정하고, 파일들이 저장된 디렉토리를 지정
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -33,6 +39,42 @@ graph = get_graph()
 
 config = RunnableConfig(recursion_limit=100)
 researcher_index = 0
+
+
+@app.websocket("/ws/sc")
+async def websocket_sc(websocket: WebSocket):
+    await websocket.accept()
+
+    # 클라이언트에게 환영 메시지 전송
+    welcome_message = {"response": "WebSocket connected!", "agentType": "Server"}
+    await websocket.send_json(welcome_message)
+
+    # 클라이언트를 목록에 추가
+    sc_clients.append(websocket)
+    print("sc_clients: ", sc_clients)
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+            print("Data: \n")
+            print(data)
+
+            
+            # "heartbeat" 메시지인지 확인
+            if data.get("heartbeat") == "ping":
+                # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
+                continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
+
+
+    except WebSocketDisconnect:
+        print("WebSocket connection closed")
+
+    except Exception as e:
+        print(f"WebSocket Error: {e}")
+        await websocket.close()
+
+
+
 
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
@@ -63,6 +105,21 @@ async def websocket_chat(websocket: WebSocket):
             print("inputs: ", inputs)
 
             key = "Bot"
+
+            if user_input == "but_1_on":
+                # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
+                print("but_1_on")
+                for sc_client in sc_clients:
+                    try:
+                        if sc_client.client_state == WebSocketState.CONNECTED:
+                            print("sending...")
+                            await sc_client.send_json({"message": "synth_1"})
+                        else:
+                            print("Client is not connected.")
+                    except Exception as e:
+                        print(f"Error sending message: {e}")
+
+                continue
             
             for output in graph.stream(inputs, config):
                 # print("output:", output)

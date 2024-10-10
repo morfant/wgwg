@@ -216,3 +216,26 @@ h1 {
 .pdf-button:hover {
   background-color: #45a049;
 }
+
+
+
+
+.slider-container {
+  margin-top: 20px; /* 슬라이더와 버튼 사이의 간격 */
+}
+
+.vue-slider {
+  margin: 10px 0; /* 슬라이더의 상하 여백 */
+  width: 100%; /* 슬라이더의 폭을 전체 너비로 설정 */
+}
+
+/* 슬라이더의 손잡이 스타일 (옵션) */
+.vue-slider .slider-handle {
+  background-color: #599898; /* 손잡이 색상 */
+  border: 2px solid #4b8b9f; /* 손잡이 테두리 색상 */
+}
+
+/* 슬라이더의 레일 스타일 (옵션) */
+.vue-slider .slider-rail {
+  background-color: #ddd; /* 레일 색상 */
+}

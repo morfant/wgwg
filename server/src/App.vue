@@ -43,7 +43,27 @@
           >
             {{ isFetching ? "......" : "Send" }}
           </button>
-          
+        </div>
+      </div>
+      
+      <!-- 오른쪽 영역에 버튼과 슬라이더 추가 -->
+      <div class="control-panel">
+        <h2>Control Panel</h2>
+        <div class="button-container">
+          <button v-for="(btn, index) in buttons" :key="index" @click="handleButtonClick_sound(btn)">
+            Button {{ index + 1 }}
+          </button>
+        </div>
+        <div class="slider-container">
+          <h3>Knob Controls</h3>
+          <vue-slider
+            v-for="(knob, index) in knobs"
+            :key="index"
+            v-model="knob.value"
+            :min="0"
+            :max="100"
+            @change="handleKnobChange(index, knob.value)"
+          />
         </div>
       </div>
     </div>
@@ -53,8 +73,13 @@
 <script>
 import { marked } from "marked";
 import html2pdf from 'html2pdf.js';
+import VueSlider from 'vue-slider-component'; // 슬라이더 컴포넌트 가져오기
+import 'vue-slider-component/theme/default.css'; // 테마 스타일 추가
 
 export default {
+  components: {
+    VueSlider, // 슬라이더 컴포넌트 등록
+  },
   data() {
     return {
       userInput: "",
@@ -62,12 +87,37 @@ export default {
       isFetching: false,
       isReportEnd: false,
       isConnected: false, // 웹소켓 연결 상태
-      websocket: null,
+      socket: null,
       menus: ["Research", "Rehearsal", "Feedback", "Product"], // 메뉴 항목 추가
       activeMenu: "Research", // 기본 메뉴 설정
+      buttons: [1, 2, 3, 4], // 버튼 4개 추가
+      knobs: [
+        { value: 50 },
+        { value: 50 },
+        { value: 50 },
+        { value: 50 },
+        { value: 50 },
+        { value: 50 },
+      ], // 슬라이더 6개 추가
     };
   },
   methods: {
+    handleButtonClick_sound(btn) {
+      console.log(`Button ${btn} clicked`);
+      if (btn === 1 && this.socket && this.socket.readyState === WebSocket.OPEN) {
+        // 웹소켓을 통해 but_1_on 메시지 전송
+        // this.socket.send('but_1_on');
+        this.socket.send(JSON.stringify({ message: 'but_1_on' }));
+        console.log('but_1_on 메시지를 전송했습니다.');
+      } else {
+        console.error('웹소켓이 열려 있지 않거나 버튼 번호가 잘못되었습니다.');
+      }
+      // 버튼 클릭에 대한 동작 정의
+    },
+    handleKnobChange(index, value) {
+      console.log(`Slider ${index + 1} changed to ${value}`);
+      // 슬라이더 값 변경에 대한 동작 정의
+    },
     handleButtonClick() {
       if (!this.isFetching) {
         this.sendMessage();
@@ -75,79 +125,11 @@ export default {
     },
     connectWebSocket() {
       console.log("connectWebSocket()");
-      //this.websocket = new WebSocket("ws://unbarrier.net:4001/ws/chat"); // Deploy
-      this.websocket = new WebSocket("ws://127.0.0.1:4001/ws/chat"); // Local test
-
-      this.websocket.onopen = () => {
-        console.log("WebSocket connection opened");
-        this.isConnected = true; // 연결 성공 시 입력 활성화
-
-        // 30초마다 ping 메시지 전송
-        this.pingInterval = setInterval(() => {
-                if (this.websocket.readyState === WebSocket.OPEN) {
-                    this.websocket.send(JSON.stringify({ heartbeat : "ping" }));
-                    console.log("ping");
-                }
-            }, 30000); // 30초
-      };
-
-      this.websocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        if (data.response === "[END]"){
-          if (data.agentType === "reporter") {
-            this.isFetching = false;
-            this.isReportEnd = true;
-          }
-        } else {
-          const { agentType, response } = data;
-          // console.log("agentType: ", agentType)
-          if (
-            this.messages.length > 0 &&
-            this.messages[this.messages.length - 1].sender === "Bot" &&
-            this.messages[this.messages.length - 1].agentType === agentType
-          ) {
-            // msg block에 내용 업데이트
-            const lastMessage = this.messages[this.messages.length - 1];
-            lastMessage.text = response;
-            this.isFetching = false;
-          } else {
-            // msg block 새로 만듦
-            this.messages.push({ sender: "Bot", text: response, agentType: agentType });
-          }
-          this.updateScroll(); // 메시지가 추가될 때마다 스크롤
-        }
-      };
-
-      this.websocket.onclose = () => {
-        console.log("WebSocket connection closed");
-        this.isConnected = false; // 연결 종료 시 입력 비활성화
-        this.isFetching = false;
-        // ping 메시지 전송 중지
-        clearInterval(this.pingInterval);
-      };
-
-      this.websocket.onerror = (error) => {
-        console.error("WebSocket error:", error);
-        this.isConnected = false; // 에러 발생 시 입력 비활성화
-        this.isFetching = false;
-        // ping 메시지 전송 중지
-        clearInterval(this.pingInterval);
-      };
+      // WebSocket 연결 설정
     },
     sendMessage() {
       console.log("sendMessage()");
-      if (this.userInput.trim() === "") return;
-      this.messages.push({
-        sender: "User",
-        text: this.userInput,
-        agentType: "User",
-      });
-      this.isFetching = true; // 메시지 전송 시 로딩 상태 설정
-      this.isReportEnd = false;
-      this.websocket.send(JSON.stringify({ message: this.userInput }));
-      this.userInput = "";
-      this.updateScroll(); // 메시지 전송 후 스크롤
+      // 메시지 전송 로직
     },
     setActiveMenu(menu) {
       this.activeMenu = menu; // 선택된 메뉴 항목 설정
@@ -182,12 +164,6 @@ export default {
       div.innerHTML = content;
       document.body.appendChild(div);
 
-      // // CSS 파일을 동적으로 로드
-      // const link = document.createElement('link');
-      // link.rel = 'stylesheet';
-      // link.href = '/static/pdf_styles.css'; // CSS 파일 경로
-      // document.head.appendChild(link);
-
       // html2pdf.js를 사용하여 PDF로 변환
       const element = document.getElementById('pdf-content');
       const options = {
@@ -200,12 +176,30 @@ export default {
       html2pdf().from(element).set(options).save().then(() => {
         // PDF 저장 후, 임시로 추가한 HTML 콘텐츠를 제거
         document.body.removeChild(div);
-        // document.head.removeChild(link);
       });
     }
   },
   mounted() {
     this.connectWebSocket();
+
+    // 컴포넌트가 마운트될 때 웹소켓 연결 설정
+    this.socket = new WebSocket('ws://localhost:4001/ws/chat');
+
+    this.socket.onopen = () => {
+      console.log('WebSocket 연결됨');
+    };
+
+    this.socket.onmessage = (event) => {
+      console.log('메시지 수신:', event.data);
+    };
+
+    this.socket.onerror = (error) => {
+      console.error('WebSocket 오류:', error);
+    };
+
+    this.socket.onclose = () => {
+      console.log('WebSocket 연결 종료');
+    };
   },
 };
 </script>
