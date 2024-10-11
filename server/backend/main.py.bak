@@ -7,8 +7,6 @@ import re
 import pprint
 # from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.websockets import WebSocketState  # WebSocketState 임포트
-
 import asyncio
 from agent import get_graph  # 에이전트 가져오기
 from langchain_core.messages import AIMessage
@@ -27,10 +25,6 @@ if not os.path.exists(save_directory):
     os.makedirs(save_directory)
 
 app = FastAPI()
-
-# 웹소켓 클라이언트 목록
-sc_clients = []  # /ws/sc에 연결된 클라이언트 목록
-
 # 정적 파일 경로를 '/static'으로 설정하고, 파일들이 저장된 디렉토리를 지정
 # app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -40,18 +34,12 @@ graph = get_graph()
 config = RunnableConfig(recursion_limit=100)
 researcher_index = 0
 
+@app.websocket("/ws/chat")
+async def websocket_chat(websocket: WebSocket):
+    global researcher_index  # 전역 변수로서 접근을 명시
+    global synth_list
 
-@app.websocket("/ws/sc")
-async def websocket_sc(websocket: WebSocket):
     await websocket.accept()
-
-    # 클라이언트에게 환영 메시지 전송
-    welcome_message = {"response": "WebSocket connected!", "agentType": "Server"}
-    await websocket.send_json(welcome_message)
-
-    # 클라이언트를 목록에 추가
-    sc_clients.append(websocket)
-    print("sc_clients: ", sc_clients)
 
     try:
         while True:
@@ -65,83 +53,17 @@ async def websocket_sc(websocket: WebSocket):
                 # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
-
-    except WebSocketDisconnect:
-        print("WebSocket connection closed")
-
-    except Exception as e:
-        print(f"WebSocket Error: {e}")
-        await websocket.close()
-
-
-
-
-@app.websocket("/ws/chat")
-async def websocket_chat(websocket: WebSocket):
-    global researcher_index  # 전역 변수로서 접근을 명시
-    global synth_list
-
-    await websocket.accept()
-
-    try:
-        while True:
-            data = await websocket.receive_json()
-            print("Raw Data: ")
-            print(data)
-
-            
-            # "heartbeat" 메시지인지 확인
-            if data.get("heartbeat") == "ping":
-                # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
-                continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
+            user_input = data.get("message", "")
+            # print("user_input: ", user_input)
 
             response_message = ""
             partial_message = ""
 
-            msg_type = data.get("type", "")
+            inputs = {"messages": user_input}
+            print("inputs: ", inputs)
 
-            if msg_type == "Button":
-                # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
-                print("Button...")
-                for sc_client in sc_clients:
-                    try:
-                        if sc_client.client_state == WebSocketState.CONNECTED:
-                            print("sending from buttons...")
-                            await sc_client.send_json(data)
-                        else:
-                            print("Client is not connected.")
-                    except Exception as e:
-                        print(f"Error sending message: {e}")
-
-                continue
-
-            if msg_type == "Slider":
-                # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
-                print("Slider...")
-                for sc_client in sc_clients:
-                    try:
-                        if sc_client.client_state == WebSocketState.CONNECTED:
-                            print("sending from sliders...")
-                            await sc_client.send_json(data)
-                        else:
-                            print("Client is not connected.")
-                    except Exception as e:
-                        print(f"Error sending message: {e}")
-
-                continue
-
-
-
-
-
-            # user_input = data.get("message", "")
-            # print("user_input: ", user_input)
-
-            # inputs = {"messages": user_input}
-            # print("inputs: ", inputs)
-            inputs = data
             key = "Bot"
-
+            
             for output in graph.stream(inputs, config):
                 # print("output:", output)
 

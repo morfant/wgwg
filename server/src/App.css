@@ -203,22 +203,79 @@ h1 {
   animation: smooth-blink 3.0s ease-in-out infinite; /* 애니메이션 적용 */
 }
 
-.pdf-button {
-  margin-left: 10px;
-  padding: 5px 10px;
-  background-color: #4CAF50;
+
+
+
+
+
+
+.app-container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+}
+
+.chat-section {
+  width: 60%;
+  padding: 20px;
+  background-color: #f5e0c9;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.chat-box {
+  height: 80%;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+
+.input-container {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 10px;
+}
+
+.input-box {
+  width: 80%;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.send-button {
+  width: 15%;
+  padding: 10px;
+  background-color: #ffa500;
   color: white;
   border: none;
   cursor: pointer;
-  border-radius: 4px;
 }
 
-.pdf-button:hover {
-  background-color: #45a049;
+.control-section {
+  width: 40%;
+  padding: 20px;
+  background-color: #d4edda;
 }
 
+.button-container {
+  margin-bottom: 20px;
+}
 
+.toggle-btn {
+  width: 50px;
+  height: 50px;
+  background-color: #6f42c1;
+  color: white;
+  margin: 5px;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
 
+.toggle-btn.active {
+  background-color: #ffc107;
+}
 
 .slider-container {
   margin-top: 20px; /* 슬라이더와 버튼 사이의 간격 */
@@ -239,3 +296,4 @@ h1 {
 .vue-slider .slider-rail {
   background-color: #ddd; /* 레일 색상 */
 }
+
