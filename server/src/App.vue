@@ -9,9 +9,6 @@
           :key="index"
           :class="['message', message.agentType]" >
           <div v-html="renderMessage(message.text)"></div>
-          <button v-if="isReportEnd" @click="downloadPDF(index)" class="pdf-button">
-            Download PDF
-          </button>
         </div>
         <div v-if="isFetching" class="loading-indicator">응답을 받아오는 중입니다...</div>
       </div>
@@ -78,9 +75,8 @@ export default {
   data() {
     return {
       userInput: "",
-      messages: [],
+      messages: [], // 계속 누적되는 대화 기록
       isFetching: false,
-      isReportEnd: false,
       isConnected: false,
       socket: null,
       activeMenu: "WGWG - Agent들의 놀이터", // 기본 메뉴 제목
@@ -118,13 +114,20 @@ export default {
         this.sendMessage();
       }
     },
-    connectWebSocket() {
-      console.log("connectWebSocket()");
-      // WebSocket 연결 설정
-    },
     sendMessage() {
       console.log("sendMessage()");
+
       // 메시지 전송 로직
+      if (this.userInput.trim() === "") return;
+      this.messages.push({
+        sender: "User",
+        text: this.userInput,
+        agentType: "User",
+      });
+      this.isFetching = true; // 메시지 전송 시 로딩 상태 설정
+      this.socket.send(JSON.stringify({ message: this.userInput}));
+      this.userInput = "";
+      this.updateScroll(); // 메시지 전송 후 스크롤
     },
     renderMessage(text) {
       return marked.parse(text);
@@ -135,25 +138,69 @@ export default {
     },
   },
   mounted() {
-    this.connectWebSocket();
+    // Vue 인스턴스를 전역 객체에 노출
+    // 브라우저 콘솔에서 app.isConnected 등으로 접근이 가능해짐
+    window.app = this;
 
     // 컴포넌트가 마운트될 때 웹소켓 연결 설정
     this.socket = new WebSocket('ws://localhost:4001/ws/chat');
 
     this.socket.onopen = () => {
-      console.log('WebSocket 연결됨');
+      console.log("WebSocket connection opened");
+      this.isConnected = true; // 연결 성공 시 입력 활성화
+
+      // heart beat
+      // 30초마다 ping 메시지 전송
+      this.pingInterval = setInterval(() => {
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify({ heartbeat : "ping" }));
+            console.log("ping");
+        }
+      }, 30000); // 30초
     };
 
     this.socket.onmessage = (event) => {
-      console.log('메시지 수신:', event.data);
+      const data = JSON.parse(event.data);
+      console.log(data.response);
+
+      const { agentType, response } = data;
+      console.log("agentType: ", agentType)
+      console.log(this.messages)
+      if (data.response === "[END]") {
+        this.isFetching = false;
+      } else {
+        if (
+          this.messages.length > 0 &&
+          this.messages[this.messages.length - 1].sender === "Bot" &&
+          this.messages[this.messages.length - 1].agentType === agentType
+        ) {
+          // msg block에 내용 업데이트
+          console.log("Updating...")
+          const lastMessage = this.messages[this.messages.length - 1];
+          lastMessage.text = response;
+        } else {
+          // msg block 새로 만듦
+          console.log("New block...")
+          this.messages.push({ sender: "Bot", text: response, agentType: agentType });
+        }
+        this.updateScroll(); // 메시지가 추가될 때마다 스크롤
+      }
     };
 
     this.socket.onerror = (error) => {
       console.error('WebSocket 오류:', error);
+      this.isConnected = false; // 연결 종료 시 입력 비활성화
+      this.isFetching = false;
+      // ping 메시지 전송 중지
+      clearInterval(this.pingInterval);
     };
 
     this.socket.onclose = () => {
       console.log('WebSocket 연결 종료');
+      this.isConnected = false; // 연결 종료 시 입력 비활성화
+      this.isFetching = false;
+      // ping 메시지 전송 중지
+      clearInterval(this.pingInterval);
     };
   },
 };

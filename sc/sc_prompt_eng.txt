@@ -1,59 +1,52 @@
+**Prompt:**
 
-#Input
-#Common
-[Theme] = warm, love
+Create SuperCollider code that defines a SynthDef and a Pdef based on the following parameters:
 
-#For SynthDef
-[Final amplitude] = around -6dB
-[Panning] = stable 
-[Main Synthesis method] = choose one of these [Rich Additive, waveshaping]
-[Reverberation of sound] = 80 out of 100
-[Highlight band] = -mid-high
-[Out bus number] = 100
+### Input
 
-#For Pdef
-[Complexity of pattern] = high, middle, low, choose low 
-[Repeat of each pattern class] = less than 20 (Never let it be 'inf'!)
-[Number of parallel melody lines] = 3
-[Number of notes on each melody line] = about 20
-[Speed of melody sequence] = not too fast 
-[Scale concept] = serialism 
+**Common**  
+- Theme: cat's the way of love climate change 
 
-#Task
-Based on the above input, create sound in the form of a SynthDef and a sequence of those sounds in the form of a Pdef.
+**For SynthDef**  
+- Final amplitude: around -6dB  
+- Panning: stable  
+- Main synthesis method: choose between [Rich Additive, Waveshaping, Sampling]  
+- Reverberation: 20 out of 100  
+- Highlight band: mid-high  
+- Output bus number: 100
 
-#Output
-At the top, create SuperCollider code to register the SynthDef on the server.
-At the bottom, create Pdef code that registers a pattern using that SynthDef as an instrument on the server.
-Make it so that both the SynthDef and Pdef can be executed at once by wrapping both in a larger parentheses block.
-Use the .play method for the Pdef at the end.
-Ensure that the repeat argument for pattern classes like Pseq in the Pbind does not use 'inf'.
-At least one pattern class has less than 50 as it's repeat argument.
-Make the name of the SynthDef and Pdef the same.
+**For Pdef**  
+- Pattern complexity: low  
+- Repeat of each pattern class: less than 20 (never use `inf`!)  
+- Number of parallel melody lines: 3  
+- Number of notes per melody line: about 20  
+- Melody sequence speed: mid tempo
+- Scale concept: serialism
 
-#Format
-The result should only contain SuperCollider code.
-Ensure the entire output is formatted as a markdown code block.
-On the first line of the code, write // SynthDef.
-On the second line, after //, include the name of the SynthDef in English with the correct capitalization.
-The "larger parentheses block" should follow after these two lines.
+### Task
 
-#Caution
-Make sure the .add method does not appear at the end of Pdef.
-The PmidiCps class does not exist.
-ListPattern (Pseq) requires a non-empty collection.
+Using the above input, generate SuperCollider code that:
+1. Use .add method to registers a SynthDef on the server.
+2. Registers a Pdef pattern using that SynthDef as its instrument.
 
-It is not necessary to use Demand.
-If you do use Demand, avoid using 'inf' for the repeat count.
-If you use Demand, verify the following:
-    Demand.ar(trig, reset, demandUGens)
-    The 'trig' argument of the Demand class has to be an audio rate UGen.
+Wrap both the SynthDef and Pdef within a single parentheses block so they can be executed together. The Pdef should use the `.play` method at the end.
 
-    Arguments of Demand:
-    - trig: It must be an audio rate UGen. Trigger. It can be any signal. A trigger happens when the signal changes from non-positive to positive.
-    - reset: Trigger. Resets the list of UGens when triggered.
-    - demandUGens: List of demand-rate UGens to get values from. When the shortest stream ends, this UGen will set the 'done' flag.
-    The 'repeat' of any demandUGens should not be 'inf'.
+**Specific Requirements:**
+- Name the SynthDef and Pdef the same (use English with proper capitalization).
+- Ensure the repeat argument for pattern classes like `Pseq` in the `Pbind` is not `inf` and at least one pattern class has a repeat argument of less than 50.
+- Avoid using `.add` at the end of the Pdef.
+- `PmidiCps` class should not be used, and `Pseq` must include a non-empty collection.
+- Ensure that any pattern classes like `Pseq` can not understand '.scramble' method.
+- Don't use '.serial' method with Scale class.
 
-When defining local variables with var, do so at the very beginning of the function.
-If you need an audio sample to load via Buffer, use /Users/giy/WGWG/server/backend/static/sample.wav.
+- If you use `Demand`, avoid `inf` as the repeat count and ensure the `trig` argument is an audio-rate UGen.
+- Define local variables with `var` at the beginning of the function.
+- If a sample is needed, use `/Users/giy/WGWG/server/backend/static/sample.wav` as the file path.
+
+### Output Format
+
+- The entire output should be formatted as SuperCollider code inside a Markdown code block.
+- On the first line, include the comment `// SynthDef` followed by the SynthDef's name on the next line as a comment.
+- Ensure no `.add` method is used after Pdef, and avoid `PmidiCps`.
+- Keep the complexity simple, with a stable but warm and loving theme throughout the sound.
+

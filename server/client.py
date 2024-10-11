@@ -13,16 +13,16 @@ client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
 
 async def connect_to_server():
     async with websockets.connect(uri) as websocket:
-        print("서버와 연결되었습니다.")
+        print("[Client] 서버와 연결되었습니다.")
         
         # 서버로부터 환영 메시지를 받습니다.
         response = await websocket.recv()
-        print(f"서버 메시지: {response}")
+        print(f"[Client] 서버 메시지: {response}")
 
         while True:
             # 서버로부터 메시지 수신
             response = await websocket.recv()
-            print(f"Msg from server: {response}")
+            print(f"[Client] Msg from server: {response}")
             
             # JSON 형식으로 수신한 데이터를 파싱
             data = json.loads(response)
@@ -30,7 +30,7 @@ async def connect_to_server():
                 type = data["type"]
                 index = data["index"]
                 value = data["value"]
-                print(f"{type} / {index} / {value}")
+                print(f"[Client] {type} / {index} / {value}")
 
                 if type == "Button":
                     random_value = random.uniform(0.0, 1.0)
