@@ -5,6 +5,11 @@ from typing import TypedDict
 from langgraph.graph import StateGraph, START, END
 from langgraph.graph.message import add_messages
 from langchain_openai import ChatOpenAI
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
+
 
 # 환경 변수 설정 (필요에 따라 main.py에서 설정하는 방식과 동일하게 할 수 있음)
 # os.environ["OPENAI_API_KEY"] = "your_openai_api_key"
