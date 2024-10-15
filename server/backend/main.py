@@ -152,7 +152,10 @@ async def websocket_chat(websocket: WebSocket):
                 chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
                 if response_message != None:
                     for i in range(len(partial_message), len(response_message), chunk_size):
-                        partial_message += response_message[i:i+chunk_size]
+                        new_message = response_message[i:i+chunk_size]
+                        partial_message += new_message
+                        print("new_message: ", new_message)
+                        print("new_message_unicode: ", ord(new_message))
                         await websocket.send_json({"response": partial_message, "agentType": key})
                         await asyncio.sleep(0.01)  # 타이핑 딜레이
 
