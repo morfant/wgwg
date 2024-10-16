@@ -11,6 +11,9 @@ uri = "ws://localhost:4001/ws/sc"
 # OSC 클라이언트 설정 (SuperCollider의 서버 IP와 포트)
 client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
 
+def array_to_string(arr):
+    return ''.join(map(str, arr))
+
 async def connect_to_server():
     async with websockets.connect(uri) as websocket:
         print("[Client] 서버와 연결되었습니다.")
@@ -39,6 +42,11 @@ async def connect_to_server():
                 if type == "Slider":
                     random_value = random.uniform(0.0, 1.0)
                     client.send_message(f"/set_synth_{index}", value)
+                    
+                if type == "Sentance":
+                    val_str = array_to_string(value)
+                    print(f"morse_code_{index}")
+                    client.send_message(f"/morse_code", [val_str, index])
                     
 
 # 비동기 루프 실행

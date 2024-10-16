@@ -93,13 +93,20 @@ export default {
   },
   methods: {
     toggleButton(index) {
+
       this.buttons[index].active = !this.buttons[index].active;
       var state = this.buttons[index].active;
       console.log(`Button ${index + 1} toggled: ${this.buttons[index].active}`);
 
+
       // 버튼에 대한 동작 정의
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
+        // if (index === 5) {
+          // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
+        // } else {
+          this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
+          // this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
+        // }
       }
     },
     handleSliderChange(index, val) {

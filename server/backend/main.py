@@ -41,6 +41,10 @@ config = RunnableConfig(recursion_limit=100)
 researcher_index = 0
 
 
+# FOR TEST
+morse_test = False
+
+
 @app.websocket("/ws/sc")
 async def websocket_sc(websocket: WebSocket):
     await websocket.accept()
@@ -80,6 +84,7 @@ async def websocket_sc(websocket: WebSocket):
 async def websocket_chat(websocket: WebSocket):
     global researcher_index  # 전역 변수로서 접근을 명시
     global synth_list
+    global morse_test
 
     await websocket.accept()
 
@@ -99,6 +104,25 @@ async def websocket_chat(websocket: WebSocket):
             partial_message = ""
 
             msg_type = data.get("type", "")
+
+            if msg_type == "Test":
+                print("Test...")
+                morse_test = True
+
+                if morse_test == True:
+                    for sc_client in sc_clients:
+                        try:
+                            if sc_client.client_state == WebSocketState.CONNECTED:
+                                print("sending from messages...")
+                                message = { "type": "Sentance", "index": data.get("index", ""), "value": [0, 1, 2, 0, 1]}
+                                # sock.sendall(message.encode('utf-8'))  # 문자열을 바이트로 인코딩해 전송
+                                await sc_client.send_json(message)
+                            else:
+                                print("Client is not connected.")
+                        except Exception as e:
+                            print(f"Error sending message: {e}")
+                    morse_test = False
+                continue
 
             if msg_type == "Button":
                 # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
