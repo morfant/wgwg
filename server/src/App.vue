@@ -140,8 +140,13 @@ export default {
       return marked.parse(text);
     },
     updateScroll() {
+
+      const chatBox = this.$el.querySelector('.chat-box');
+      if (chatBox) {
+      chatBox.scrollTop = chatBox.scrollHeight;
+      }
       // 브라우저 창 전체를 스크롤하여 페이지의 맨 아래로 이동
-      window.scrollTo(0, document.body.scrollHeight);
+      //window.scrollTo(0, document.body.scrollHeight);
     },
   },
   mounted() {

@@ -63,8 +63,7 @@ async def websocket_sc(websocket: WebSocket):
             data = await websocket.receive_json()
             print("Data: \n")
             print(data)
-
-            
+       
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
                 # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
@@ -77,8 +76,6 @@ async def websocket_sc(websocket: WebSocket):
     except Exception as e:
         print(f"WebSocket Error: {e}")
         await websocket.close()
-
-
 
 
 @app.websocket("/ws/chat")
@@ -161,34 +158,49 @@ async def websocket_chat(websocket: WebSocket):
             key = "Bot"
 
             message = ""
-            topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
+            
+            topic = ""
+            # topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
+            # topic = "AI로서 토론에 참여하고 있는 당신에게 인간은 어떤 도전과 변화에 직면하고 있다고 보이나요?, 그 속에서 인간의 본질은 어떻게 재정의될까요? 인간과 AI의 관계는 어떤 방향으로 나아갈 수 있을까요? 인간성에 새로운 질문을 던지며 그들의 본질을 위협하게 될까요?"
             inputs = {"topic": topic, "messages":message } 
 
             for output in graph.stream(inputs, config):
                 # print("output:", output)
+                # response_data = output
+                # print(response_data)
+                response_message = ''
+                response_morese = ''
 
-                response_data = output
-                print(response_data)
+                for key, value in output.items():
+                    print(f"{key}: {value}")
+                    if 'messages' in value:
+                        for message in value['messages']:
+                            response_message = message.content  
 
-                # 'content' 부분 추출
-                # response_message = response_data['chatbot']['messages'][0].content
-                # response_message = response_data['messages'][-1].content
-                response_message = response_data['host']['messages'][0].content
-                print("response_message: ", response_message)
+                    elif 'morse' in value:     
+                        for morse in value['morse']:
+                            response_morse = morse.content        
+
+                    # for key_, value_ in value.items():
+                    #     print(f"{key_}: {value_}")
+
+                # # 'content' 부분 추출
+                # # response_message = response_data['chatbot']['messages'][0].content  
+                # response_message = response_data['host']['messages'][0].content
+                # print("response_message: ", response_message)
 
                 # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
                 chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
-                if response_message != None:
+                if response_message != '':
                     for i in range(len(partial_message), len(response_message), chunk_size):
                         new_message = response_message[i:i+chunk_size]
                         partial_message += new_message
-                        print("new_message: ", new_message)
-                        print("new_message_unicode: ", ord(new_message))
+                        # print("new_message: ", new_message)
+                        # print("new_message_unicode: ", ord(new_message))
                         await websocket.send_json({"response": partial_message, "agentType": key})
-                        await asyncio.sleep(0.01)  # 타이핑 딜레이
+                        await asyncio.sleep(0.025)  # 타이핑 딜레이
 
                 partial_message = ""
-
                 await websocket.send_json({"response": "[END]", "agentType": key})
 
             pprint.pprint("------------------------------------")

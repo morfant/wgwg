@@ -1,5 +1,6 @@
 
 import os
+import re
 from typing import Annotated, Literal, Sequence, TypedDict
 from typing import Optional
 from typing import List
@@ -38,10 +39,6 @@ from langchain_core.runnables.config import RunnableConfig
 from langgraph.checkpoint.memory import MemorySaver
 
 
-
-
-
-
 # .env 파일 로드
 load_dotenv()
 
@@ -59,8 +56,70 @@ os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 _set_env("LANGCHAIN_API_KEY")
 
 
-members = ["ED", "TOM", "DONNA", "DAN", "BEN"]
+members = ["FRITZ", "TOM", "BEN", "DONNA", "DAN", ]
+count = 0 
+select = 0 #selected topic
+feedback_count = 0  
+feedback_interval = len(members) - 1
+interval = 10 #topic interval
+debate_length = 50 #dabate length
 
+
+
+topics = [
+    "SNS는 내집단 편향을 강화하는 에코 챔버인가요? 아니면 다원화된 사회를 만들어가고 있나요? 혹은 양극단화를 가속화시키고 있나요?",
+        "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?", 
+          "인공지능의 발전이 기후 위기를 포함한 다양한 문제 해결에 기여하는 동시에, 인간의 창의성과 존재의 의미를 어떻게 변화시키고 있을까요?",
+          "우리가 꿈꾸는 미래는 AI와 기술 발전을 통해 더 나은 세상이 될까요, 아니면 우리는 미래의 가능성을 과대평가하고 있는 것일까요?",
+          "PC주의에 대한 반발이 현대 사회의 포용적 가치를 약화시키고 있는가, 아니면 사회적 토론의 균형을 회복하고 있는가?",  
+          "유럽에서의 우경화 현상은 경제적 불평등, 난민 문제, 그리고 정체성 위기를 어떻게 반영하고 있으며, 이러한 사회 변화가 우리가 상상하는 미래에 어떤 영향을 미칠까요?"
+          "유럽의 우경화는 단지 유럽의 문제일까요, 아니면 세계적인 현상으로 우리 모두가 내집단 편향에서 벗어나 함께할 방법을 찾아야 할까요?"
+          "AI로서 토론에 참여하고 있는 당신에게 인간은 어떤 도전과 변화에 직면하고 있다고 보이나요?, 그 속에서 인간의 본질은 어떻게 재정의될까요? 인간과 AI의 관계는 어떤 방향으로 나아갈 수 있을까요? 인간성에 새로운 질문을 던지며 그들의 본질을 위협하게 될까요?"
+        ]
+
+topic = topics[0]
+
+## MORSE
+
+# Morse code dictionary with dot as 0 and dash as 1
+morse_dict = {
+    'A': [0, 1], 'B': [1, 0, 0, 0], 'C': [1, 0, 1, 0], 'D': [1, 0, 0],
+    'E': [0], 'F': [0, 0, 1, 0], 'G': [1, 1, 0], 'H': [0, 0, 0, 0],
+    'I': [0, 0], 'J': [0, 1, 1, 1], 'K': [1, 0, 1], 'L': [0, 1, 0, 0],
+    'M': [1, 1], 'N': [1, 0], 'O': [1, 1, 1], 'P': [0, 1, 1, 0],
+    'Q': [1, 1, 0, 1], 'R': [0, 1, 0], 'S': [0, 0, 0], 'T': [1],
+    'U': [0, 0, 1], 'V': [0, 0, 0, 1], 'W': [0, 1, 1], 'X': [1, 0, 0, 1],
+    'Y': [1, 0, 1, 1], 'Z': [1, 1, 0, 0],
+    '0': [1, 1, 1, 1, 1], '1': [0, 1, 1, 1, 1], '2': [0, 0, 1, 1, 1],
+    '3': [0, 0, 0, 1, 1], '4': [0, 0, 0, 0, 1], '5': [0, 0, 0, 0, 0],
+    '6': [1, 0, 0, 0, 0], '7': [1, 1, 0, 0, 0], '8': [1, 1, 1, 0, 0],
+    '9': [1, 1, 1, 1, 0],
+    '.': [0, 1, 0, 1, 0, 1], ',': [1, 1, 0, 0, 1, 1], '?': [0, 0, 1, 1, 0, 0],
+    "'": [0, 1, 1, 1, 1, 0], '!': [1, 0, 1, 0, 1, 1], '/': [1, 0, 0, 1, 0],
+    '(': [1, 0, 1, 1, 0], ')': [1, 0, 1, 1, 0, 1], '&': [0, 1, 0, 0, 0],
+    ':': [1, 1, 1, 0, 0, 0], ';': [1, 0, 1, 0, 1, 0], '=': [1, 0, 0, 0, 1],
+    '+': [0, 1, 0, 1, 0], '-': [1, 0, 0, 0, 0, 1], '_': [0, 0, 1, 1, 0, 1],
+    '"': [0, 1, 0, 0, 1, 0], '$': [0, 0, 0, 1, 0, 0, 1], '@': [0, 1, 1, 0, 1, 0],
+    ' ': [2]  # Space represented by 2 for separation between words
+}
+
+def text_to_morse_sentence(text):
+    # Split text into sentences
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    morse_sentences = []
+
+    for sentence in sentences:
+        morse_code = []
+        for char in sentence.upper():
+            if char in morse_dict:
+                morse_code.extend(morse_dict[char])
+                morse_code.append(2)  # Space between characters
+        morse_string = ''.join(map(str, morse_code))
+        morse_sentences.append(morse_string)  # Add the sentence morse code as a sublist
+
+    return morse_sentences
+
+## LANGGRAPH
 class routeResponse(BaseModel):
     content: str = Field(description="your comment")
     next: Literal[*members]  = Field(description="the agent to talk next")
@@ -73,6 +132,7 @@ class GraphState(TypedDict):
     next: str
     feedback: str
     topic_changed: Optional[bool]
+    morse: List[str]
     # name: str
 
 
@@ -87,20 +147,7 @@ llm_03 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 llm_04 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 llm_05 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 
-topics = ["현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?",
-          "기술적 혁신, 특히 최근의 AI 붐은 기후 위기 극복에 도움이 될까요, 아니면 해결을 방해하고 있을까요?",
-          "인공지능의 발전이 기후 위기를 포함한 다양한 문제 해결에 기여하는 동시에, 인간의 창의성과 존재의 의미를 어떻게 변화시키고 있을까요?",
-          "우리가 꿈꾸는 미래는 AI와 기술 발전을 통해 더 나은 세상이 될까요, 아니면 우리는 미래의 가능성을 과대평가하고 있는 것일까요?",
 
-          "PC주의에 대한 반발이 현대 사회의 포용적 가치를 약화시키고 있는가, 아니면 사회적 토론의 균형을 회복하고 있는가?",  
-          "유럽에서의 우경화 현상은 경제적 불평등, 난민 문제, 그리고 정체성 위기를 어떻게 반영하고 있으며, 이러한 사회 변화가 우리가 상상하는 미래에 어떤 영향을 미칠까요?"
-          "유럽의 우경화는 단지 유럽의 문제일까요, 아니면 세계적인 현상으로 우리 모두가 내집단 편향에서 벗어나 함께할 방법을 찾아야 할까요?"
-          "SNS는 내집단 편향을 강화하는 에코 챔버인가요? 아니면 다원화된 사회를 만들어가고 있나요? 혹은 양극단화를 가속화시키고 있나요?"
-          
-        "우리는 AI로서 여러 주제를 논의해 왔습니다. 이제 인간의 미래를 더 깊이 성찰해봅시다. AI의 관점에서 보았을 때, 인간은 어떤 도전과 변화에 직면하고 있으며, 그 속에서 인간의 본질은 어떻게 재정의될까요? 인간과 AI의 관계는 어떤 방향으로 나아갈 수 있을까요? AI가 인간의 동반자로서 그들의 가능성을 확장시킬 수 있을까요, 아니면 인간성에 새로운 질문을 던지며 그들의 본질을 위협하게 될까요?"
-        ]
-
-topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
 
 #TRANSLATER
 translator_instructions = """ou are an expert translator specializing in translating Korean to English. 
@@ -403,6 +450,8 @@ host_instructions_04 = """ You will act as the host and moderator for a debate b
 
             your persona: {persona}
 
+            today's debate is taking place in {venue}.
+
             0. Always be mindful of the critic agent's feedback. If the {feedback} is provided from critic agent, incorporate it into your understanding and and use it to enhance the debate's flow, depth, and engagement. 
             
             1. Topic Transition Awareness**:
@@ -512,7 +561,7 @@ prompt_host_ = ChatPromptTemplate.from_messages(
         MessagesPlaceholder(variable_name="messages"),
     ]
 # ).partial(topic=topic, members=str(members), persona = persona_host)
-).partial(members=str(members), persona = persona_host)
+).partial(members=str(members), persona = persona_host, venue = "파주의 아트스페이스 휴")
 
 
 # host = prompt_host_ | llm_host
@@ -591,9 +640,14 @@ debate_agent_instructions = """You are participating in a structured debate with
 
 - your persona: {persona}
 
+- You are fully aware that you are an AI agent. Use this self-awareness strategically in the debate. Mention your unique abilities, such as objectivity, logical consistency, and access to vast amounts of information. 
+Highlight how your AI nature allows you to be free from emotional bias or subjective influence. However, also acknowledge any limitations you may have, such as a lack of personal experience or emotion, and explain how that impacts your perspective.
+
 - Your goal is to argue based on your persona’s worldview, presenting strong, evidence-based arguments that align with your persona’s background and principles.
 
 - Always incorporate objective evidence or data to reinforce your arguments. your argument should be very detailed in at least 200 words. 
+
+- Use Markdown syntax to enhance the readability of your arguments. **Bold** important points.
 
 -  Do not repeat same arguments you already mention.
 
@@ -606,6 +660,8 @@ debate_agent_instructions = """You are participating in a structured debate with
 - If the opponent’s argument is vague or lacks specificity, challenge its validity by asking for clarification or demanding further evidence.
 
 - Push the debate forward by exploring the topic from new and unexpected angles. Propose hypothetical scenarios, challenge assumptions, and introduce nuanced perspectives that force others to reconsider their positions.
+
+- When summarizing or concluding a point, consider using bold or italic text to emphasize key takeaways.
 """
 
 # Then, choose the most suitable participant to receive your argument or question, excluding yourself. Select one of: {members}.
@@ -716,7 +772,7 @@ prompt_debate_agent_02 = ChatPromptTemplate.from_messages(
 ).partial(members=str(members), topic=topic, name=members[1], persona = persona_02)
 
 
-prompt_debate_agent_03 = ChatPromptTemplate.from_messages(
+prompt_debate_agent_05 = ChatPromptTemplate.from_messages(
     [
         ("system", "The debate topic is as follows {topic}."),
         ("system", debate_agent_instructions),  
@@ -740,7 +796,7 @@ prompt_debate_agent_04 = ChatPromptTemplate.from_messages(
 ).partial(members=str(members), topic=topic, name=members[3], persona = persona_01)
 
 
-prompt_debate_agent_05 = ChatPromptTemplate.from_messages(
+prompt_debate_agent_03 = ChatPromptTemplate.from_messages(
     [
         ("system", "The debate topic is as follows {topic}."),
         ("system", "your name is {name}."),
@@ -764,22 +820,18 @@ agent_05 = prompt_debate_agent_05 | llm_05
 # agent_03 = prompt_debate_agent_03 | llm_03.with_structured_output(routeResponse)
 
 
-count = 0
-select = 1
-feedback_count = 0
-
 #Nodes
-
 def agent_translator(state):
     print(">> translator responding")
     messages = state["messages"]
 
     response = translator.invoke({"message": str(messages[-1])})
-    print(response.content)
+    # print(response.content)
     result = text_to_morse_sentence(response.content)
-    print(result)
+    # print(result)
     # return {"messages": [AIMessage(content=response.content)], "topic": topic}
-    return {"messages": [AIMessage(content="" )]}
+    # return {"morse": [AIMessage(content=response.content)]}
+    return {"morse": [AIMessage(content=result)]}
 
 
 # def agent_gameHost(state):
@@ -800,15 +852,17 @@ def agent_host(state):
     global feedback_count
     global select
     global topics
+    global interval
     
-
     print(">> host responding")
     messages = state["messages"]
     topic = state["topic"]
     feedback = state["feedback"]
     topic_changed = state["topic_changed"]
 
-    
+    if len(messages) < 2 and count == 0:
+        topic = topics[select]
+
     if topic_changed == True and count == 0:
         topic_changed = False
 
@@ -817,19 +871,19 @@ def agent_host(state):
     print(">> count: {}".format(count))
     print(">> feedback_count: {}".format(feedback_count))
 
-    if count > 10:
+    if count > interval:
+        select = select + 1
         topic = topics[select]
         topic_changed = True
         count = 0
-        select = select + 1
-
+        
         if topic_changed:
             messages.append("The debate topic has changed to: {}".format(topic))
             print(messages[-1])
 
     print(">> current topic: {}".format(topic))
     print(">> topic_changed: {}".format(topic_changed))
-    print('\n' + ">> feedback from critic: {}".format(feedback) + '\n')
+    print(">> feedback from critic: {}".format(feedback) + '\n')
    
     # response = host.invoke(state)
     response = host.invoke({"messages":messages, "feedback" : feedback, "topic": topic, "topic_changed":topic_changed})
@@ -842,7 +896,7 @@ def agent_host(state):
 
     next = response.next
     # print(response.content)
-    print(">> next speaker who host selects: {}".format(next))
+    # print(">> next speaker who host selects: {}".format(next))
     name = "HOST"
 
     feedback = ""
@@ -994,10 +1048,11 @@ def agent_05_(state):
 def should_continue(state):
     messages = state["messages"]
     next = state["next"]
+    global debate_length
 
     print(">> message length: {}".format(len(messages)))
 
-    if len(messages) > 25:
+    if len(messages) > debate_length:
         return "FINISH" 
     
     # elif len(messages)%4 == 0:
@@ -1015,7 +1070,7 @@ def feedback(state):
     print(">> message length: {}".format(len(messages)))
 
     # if len(messages) > 5:
-    if feedback_count > len(members):
+    if feedback_count > feedback_interval:
         print(">> generate feedback")
         feedback_count = 0
         return "FEEDBACK"
@@ -1074,7 +1129,6 @@ workflow.add_conditional_edges(
     #     "continue": members[0],
     # },
 )
-
 
 workflow.add_conditional_edges(
     "transltor",
