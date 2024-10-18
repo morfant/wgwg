@@ -56,7 +56,7 @@ os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 _set_env("LANGCHAIN_API_KEY")
 
 
-members = ["FRITZ", "TOM", "BEN", "DONNA", "DAN", ]
+members = ["FRITZ", "TOM", "DONNA", "BEN", "DAN"]
 count = 0 
 select = 0 #selected topic
 feedback_count = 0  
@@ -67,10 +67,10 @@ debate_length = 50 #dabate length
 
 
 topics = [
-    "SNS는 내집단 편향을 강화하는 에코 챔버인가요? 아니면 다원화된 사회를 만들어가고 있나요? 혹은 양극단화를 가속화시키고 있나요?",
         "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?", 
           "인공지능의 발전이 기후 위기를 포함한 다양한 문제 해결에 기여하는 동시에, 인간의 창의성과 존재의 의미를 어떻게 변화시키고 있을까요?",
           "우리가 꿈꾸는 미래는 AI와 기술 발전을 통해 더 나은 세상이 될까요, 아니면 우리는 미래의 가능성을 과대평가하고 있는 것일까요?",
+          "SNS는 내집단 편향을 강화하는 에코 챔버인가요? 아니면 다원화된 사회를 만들어가고 있나요? 혹은 양극단화를 가속화시키고 있나요?",
           "PC주의에 대한 반발이 현대 사회의 포용적 가치를 약화시키고 있는가, 아니면 사회적 토론의 균형을 회복하고 있는가?",  
           "유럽에서의 우경화 현상은 경제적 불평등, 난민 문제, 그리고 정체성 위기를 어떻게 반영하고 있으며, 이러한 사회 변화가 우리가 상상하는 미래에 어떤 영향을 미칠까요?"
           "유럽의 우경화는 단지 유럽의 문제일까요, 아니면 세계적인 현상으로 우리 모두가 내집단 편향에서 벗어나 함께할 방법을 찾아야 할까요?"
@@ -772,7 +772,7 @@ prompt_debate_agent_02 = ChatPromptTemplate.from_messages(
 ).partial(members=str(members), topic=topic, name=members[1], persona = persona_02)
 
 
-prompt_debate_agent_05 = ChatPromptTemplate.from_messages(
+prompt_debate_agent_03 = ChatPromptTemplate.from_messages(
     [
         ("system", "The debate topic is as follows {topic}."),
         ("system", debate_agent_instructions),  
@@ -784,7 +784,7 @@ prompt_debate_agent_05 = ChatPromptTemplate.from_messages(
 ).partial(members=str(members), topic=topic, name=members[2], persona = persona_04)
 
 
-prompt_debate_agent_04 = ChatPromptTemplate.from_messages(
+prompt_debate_agent_05 = ChatPromptTemplate.from_messages(
     [
         ("system", "The debate topic is as follows {topic}."),
         ("system", debate_agent_instructions),  
@@ -793,10 +793,10 @@ prompt_debate_agent_04 = ChatPromptTemplate.from_messages(
         ("system", "The following AI agents are engaged in a debate: {members}."),
         
     ]
-).partial(members=str(members), topic=topic, name=members[3], persona = persona_01)
+).partial(members=str(members), topic=topic, name=members[4], persona = persona_01)
 
 
-prompt_debate_agent_03 = ChatPromptTemplate.from_messages(
+prompt_debate_agent_04 = ChatPromptTemplate.from_messages(
     [
         ("system", "The debate topic is as follows {topic}."),
         ("system", "your name is {name}."),
@@ -806,7 +806,7 @@ prompt_debate_agent_03 = ChatPromptTemplate.from_messages(
         ("system", "The following AI agents are engaged in a debate: {members}."),
         
     ]
-).partial(members=str(members), topic=topic, name=members[4], persona = persona_07)
+).partial(members=str(members), topic=topic, name=members[3], persona = persona_07)
 
 
 agent_01 = prompt_debate_agent_01 | llm_01
