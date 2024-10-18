@@ -10,7 +10,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState  # WebSocketState 임포트
 
 import asyncio
-from agent import get_graph  # 에이전트 가져오기
+# from agent import get_graph  # 에이전트 가져오기
+from agent_multi import get_graph  # 에이전트 가져오기
 from langchain_core.messages import AIMessage
 from langchain_core.runnables.config import RunnableConfig
 from pythonosc import udp_client
@@ -37,13 +38,13 @@ sc_clients = []  # /ws/sc에 연결된 클라이언트 목록
 # 컴파일된 그래프 가져오기
 graph = get_graph()
 
-config = RunnableConfig(recursion_limit=100)
+configurable = {"thread_id": "1"}
+config = RunnableConfig(configurable=configurable, recursion_limit=100)
+# config = RunnableConfig(recursion_limit=100)
 researcher_index = 0
-
 
 # FOR TEST
 morse_test = False
-
 
 @app.websocket("/ws/sc")
 async def websocket_sc(websocket: WebSocket):
@@ -94,7 +95,6 @@ async def websocket_chat(websocket: WebSocket):
             print("Raw Data: ")
             print(data)
 
-            
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
                 # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
@@ -154,22 +154,26 @@ async def websocket_chat(websocket: WebSocket):
 
                 continue
 
-
-
             user_input = data.get("message", "")
-            print("user_input: ", user_input)
-
-            inputs = {"messages": user_input}
-            print("inputs: ", inputs)
+            # print("user_input: ", user_input)
+            # inputs = {"messages": user_input}
+            # print("inputs: ", inputs)
             key = "Bot"
+
+            message = ""
+            topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
+            inputs = {"topic": topic, "messages":message } 
 
             for output in graph.stream(inputs, config):
                 # print("output:", output)
 
                 response_data = output
+                print(response_data)
 
                 # 'content' 부분 추출
-                response_message = response_data['chatbot']['messages'][0].content
+                # response_message = response_data['chatbot']['messages'][0].content
+                # response_message = response_data['messages'][-1].content
+                response_message = response_data['host']['messages'][0].content
                 print("response_message: ", response_message)
 
                 # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
