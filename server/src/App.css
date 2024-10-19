@@ -99,33 +99,35 @@ h1 {
   color: #fff;
 }
 
-.message.agent {
+.message.HOST {
   background-color: #f7e4b6; /* 에이전트 메시지 색상 - 부드러운 노란색 */
   color: #000; /* 글자 색상 - 검은색 */
 }
 
-.message.critic {
-  background-color: #d4a5a5; /* 비평가 메시지 색상 - 부드러운 붉은색 */
+.message.FRITZ {
+  background-color: #cc7f7f; /* 비평가 메시지 색상 - 부드러운 붉은색 */
   color: #fff; /* 글자 색상 - 흰색 */
 }
 
-.message.research_director {
-  background-color: #b6e4d0; /* 연구 디렉터 메시지 색상 - 부드러운 녹색 */
-  color: #000; /* 글자 색상 - 검은색 */
-}
 
-.message.researcher_0 {
-  background-color: #4970a9; 
+.message.DONNA {
+  background-color: #7779c3; 
   color: #fff; 
 }
 
-.message.researcher_1 {
-  background-color: #4970a9; 
+.message.TOM {
+  background-color: #49a97f; 
   color: #fff; 
 }
 
-.message.researcher_2 {
-  background-color: #4970a9; 
+.message.BEN {
+  background-color: #376b8e; /* 연구 디렉터 메시지 색상 - 부드러운 녹색 */
+  color: #ffffff; /* 글자 색상 - 검은색 */
+}
+
+
+.message.DAN {
+  background-color: #a94997; 
   color: #fff; 
 }
 

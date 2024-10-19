@@ -79,7 +79,7 @@ export default {
       isFetching: false,
       isConnected: false,
       socket: null,
-      activeMenu: "WGWG - Agent들의 놀이터", // 기본 메뉴 제목
+      activeMenu: "WGWG 와글와글", // 기본 메뉴 제목
       buttons: [
         { active: false }, { active: false }, { active: false },
         { active: false }, { active: false }, { active: false }

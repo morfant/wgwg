@@ -169,7 +169,7 @@ async def websocket_chat(websocket: WebSocket):
                 # response_data = output
                 # print(response_data)
                 response_message = ''
-                response_morese = ''
+                response_morse = ''
 
                 for key, value in output.items():
                     print(f"{key}: {value}")
