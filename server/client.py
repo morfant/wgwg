@@ -40,10 +40,9 @@ async def connect_to_server():
                     client.send_message(f"/play_synth_{index}", value)
                 
                 if type == "Slider":
-                    random_value = random.uniform(0.0, 1.0)
-                    client.send_message(f"/set_synth_{index}", value)
+                    client.send_message(f"/set_slider", [value, index])
                     
-                if type == "Sentance":
+                if type == "MorseCode":
                     val_str = array_to_string(value)
                     print(f"morse_code_{index}")
                     client.send_message(f"/morse_code", [val_str, index])

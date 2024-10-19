@@ -1,13 +1,18 @@
+(
+// Sounds
 "./sounds.scd".loadRelative;
 
-
-(
 //Vars
 ~synth_1 = nil;
-~morse_harmonic = Array.newClear(3);
-~morse_harmonic[0] = [500, 700, 900, 400, 600].scramble;
+~morse_harmonic = Array.newClear(7);
+~morse_harmonic[0] = [500, 700, 900, 400, 600].scramble; // Not using
 ~morse_harmonic[1] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
 ~morse_harmonic[2] = [500, 700, 900, 400, 600, 1300, 1800].scramble;
+~morse_harmonic[3] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
+~morse_harmonic[4] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
+~morse_harmonic[5] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
+~morse_harmonic[6] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
+
 
 ~morse_base = Array.newClear(100);
 ~morse_chain = Array.newClear(100);
@@ -31,6 +36,7 @@ OSCdef(\morseCode, { |msg|
 	var shortDur = 0.1;  // 짧은 소리 지속 시간
 	var longDur = 0.3;   // 긴 소리 지속 시간
 	var pauseDur = 0.5;  // 공백 대기 시간
+	var longpauseDur = 1.0;  // 문장 사이 공백 시간
 
 
 	idx = msg[2].asInteger;
@@ -45,6 +51,7 @@ OSCdef(\morseCode, { |msg|
 		if (char.asString == "0", {list.put(i, shortDur)});
 		if (char.asString == "1", {list.put(i, longDur)});
 		if (char.asString == "2", {list.put(i, pauseDur)});
+		if (char.asString == "3", {list.put(i, longpauseDur)});
 	};
 	("list: "++list).postln;
 
@@ -129,18 +136,19 @@ OSCdef(\cmd_revc6, { |msg, time, addr, port|
 
 // Sliders
 OSCdef(\sliders, { |msg, time, addr, port|
-	var val = nil;
-	"====Slider_1====".postln;
+	var idx, str, list, val = nil;
+	idx = msg[2];
+	"====Slider_"++idx++"====".postln;
 	msg.postln;
 	val = msg[1].asInteger;
 	val.class.postln;
-	val = val.linlin(0, 100, 0.1, 1.2);
+	val = val.linlin(0, 100, 0.1, 2.0);
 	// ~synth_1.set(\freq, val);
 	val.postln;
 
-	~morse_chain[1].stop;
-	~morse_chain[1] =
-	(Pbind(\tempo, val) <> ~morse_base[1]).play(~t_clocks[1]);
+	~morse_chain[idx].stop;
+	~morse_chain[idx] =
+	(Pbind(\tempo, val) <> ~morse_base[idx]).play(~t_clocks[idx]);
 
 
 }, '/set_slider', recvPort: 57120);

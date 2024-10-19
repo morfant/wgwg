@@ -45,6 +45,7 @@ researcher_index = 0
 
 # FOR TEST
 morse_test = False
+morse_idx = 0
 
 @app.websocket("/ws/sc")
 async def websocket_sc(websocket: WebSocket):
@@ -83,6 +84,7 @@ async def websocket_chat(websocket: WebSocket):
     global researcher_index  # 전역 변수로서 접근을 명시
     global synth_list
     global morse_test
+    global morse_idx
 
     await websocket.accept()
 
@@ -181,13 +183,24 @@ async def websocket_chat(websocket: WebSocket):
                         for morse in value['morse']:
                             response_morse = morse.content        
 
-                    # for key_, value_ in value.items():
-                    #     print(f"{key_}: {value_}")
+                # 0 = Dot, 1 = Dash, 2 = Space
+                if response_morse != '':
+                    morse_idx+=1 # 1 ~ 6
+                    morse_idx%=6
+                    # 리스트의 요소를 연결하고 각 요소 사이에 숫자 3 추가 : 문장 사이를 3으로 표현
+                    joined_string = '3'.join(response_morse)
+                    # print("joined_string: ", joined_string)
+                    for sc_client in sc_clients:
+                        try:
+                            if sc_client.client_state == WebSocketState.CONNECTED:
+                                print("sending from messages...")
+                                message = { "type": "MorseCode", "index": morse_idx + 1, "value": joined_string}
+                                await sc_client.send_json(message)
+                            else:
+                                print("Client is not connected.")
+                        except Exception as e:
+                            print(f"Error sending message: {e}")
 
-                # # 'content' 부분 추출
-                # # response_message = response_data['chatbot']['messages'][0].content  
-                # response_message = response_data['host']['messages'][0].content
-                # print("response_message: ", response_message)
 
                 # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
                 chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
