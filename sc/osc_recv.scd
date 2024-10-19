@@ -12,15 +12,25 @@
 ~morse_base = Array.newClear(100);
 ~morse_chain = Array.newClear(100);
 
+~t_clocks = Array.fill(10, {TempoClock.new()});
 
 
 
-// MorseCodes
+// Functions
+~print_arr = {|arr|
+	arr.do{|item, index|
+		("item: " + item + " index: " + index).postln;
+	}
+};
+
+
+
+// MorseCodes Receiver
 OSCdef(\morseCode, { |msg|
 	var idx, str, list;
-    var shortDur = 0.1;  // 짧은 소리 지속 시간
-    var longDur = 0.3;   // 긴 소리 지속 시간
-    var pauseDur = 0.5;  // 공백 대기 시간
+	var shortDur = 0.1;  // 짧은 소리 지속 시간
+	var longDur = 0.3;   // 긴 소리 지속 시간
+	var pauseDur = 0.5;  // 공백 대기 시간
 
 
 	idx = msg[2].asInteger;
@@ -40,18 +50,18 @@ OSCdef(\morseCode, { |msg|
 
 	~morse_base[idx] = Pdef("morsePlayer_"++idx,
 		Pbind(
-			\instrument, \morse,
+			\instrument, "morse_"++idx,
 			// \midinote, 68,
-			\freq, Pseq(~morse_harmonic[0], inf),
+			\freq, Pseq(~morse_harmonic[idx], inf),
 			\detune, 0.0,
 			\tempo, 1.0,
 			\dur, Pseq(list, inf) * Pfunc { |ev| ev[\tempo] },
 
-    ));
+	));
 
 	~morse_chain[idx].stop;
 	~morse_chain[idx] =
-	(Pbind(\tempo, 1.0) <> ~morse_base[idx]).play;
+	(Pbind(\tempo, 1.0) <> ~morse_base[idx]).play(~t_clocks[idx]);
 
 }, '/morse_code', recvPort: 57120);
 
@@ -118,6 +128,25 @@ OSCdef(\cmd_revc6, { |msg, time, addr, port|
 
 
 // Sliders
+OSCdef(\sliders, { |msg, time, addr, port|
+	var val = nil;
+	"====Slider_1====".postln;
+	msg.postln;
+	val = msg[1].asInteger;
+	val.class.postln;
+	val = val.linlin(0, 100, 0.1, 1.2);
+	// ~synth_1.set(\freq, val);
+	val.postln;
+
+	~morse_chain[1].stop;
+	~morse_chain[1] =
+	(Pbind(\tempo, val) <> ~morse_base[1]).play(~t_clocks[1]);
+
+
+}, '/set_slider', recvPort: 57120);
+
+
+
 //============= s-1 =============
 OSCdef(\cmd_revc7, { |msg, time, addr, port|
 	var val = nil;
@@ -131,7 +160,7 @@ OSCdef(\cmd_revc7, { |msg, time, addr, port|
 
 	~morse_chain[1].stop;
 	~morse_chain[1] =
-	(Pbind(\tempo, val) <> ~morse_base[1]).play;
+	(Pbind(\tempo, val) <> ~morse_base[1]).play(~t_clocks[1]);
 
 
 }, '/set_synth_1', recvPort: 57120);
@@ -139,8 +168,18 @@ OSCdef(\cmd_revc7, { |msg, time, addr, port|
 
 //============= s-2 =============
 OSCdef(\cmd_revc8, { |msg, time, addr, port|
+	var val = nil;
 	"====Slider_2====".postln;
 	msg.postln;
+	val = msg[1].asInteger;
+	val.class.postln;
+	val = val.linlin(0, 100, 0.1, 1.2);
+	val.postln;
+
+	~morse_chain[2].stop;
+	~morse_chain[2] =
+	(Pbind(\tempo, val) <> ~morse_base[2]).play(~t_clocks[2]);
+
 
 }, '/set_synth_2', recvPort: 57120);
 
@@ -179,15 +218,6 @@ OSCdef(\cmd_revc12, { |msg, time, addr, port|
 
 
 
-// limiter
-{
-	arg ceil = 0.8, relTime = 0.01, amp = 0.8;
-    var source, limitedSignal;
-
-	limitedSignal = Limiter.ar(In.ar(100), ceil, relTime);
-
-	Out.ar(0, Pan2.ar(limitedSignal, 0, amp));
-}.play;
 
 // Reverb
 ~rev = Synth(\FreeVerb2x2, [
@@ -196,6 +226,17 @@ OSCdef(\cmd_revc12, { |msg, time, addr, port|
 	\room, 0.2,
 	\damp, 0.5,
 ], addAction:\addToTail);
+
+
+// Limiter
+~lim = Synth(\Limiter, [
+	\in, 0,
+	\ceil, 0.8,
+	\relTime, 0.01,
+	\amp, 0.8
+], target: ~rev, addAction: \addBefore);
+
+
 
 )
 
