@@ -119,7 +119,7 @@ export default {
 
       con_knobs: [
         { value: 20, label: "Reverb" },
-        { value: 20, label: "Duration" },
+        // { value: 20, label: "Duration" },
       ], // 슬라이더 6개
     };
 

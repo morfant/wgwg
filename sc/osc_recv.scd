@@ -35,7 +35,9 @@ Z: 3300 Hz
 */
 
 //Vars
-~synth_1 = nil;
+~all_char_len = 0;
+~synth_1 = nil;~synth_2 = nil;~synth_3 = nil;~synth_4 = nil;~synth_5 = nil;
+
 ~morse_harmonic = Array.newClear(7);
 ~morse_harmonic[0] = [500, 700, 900, 400, 600].scramble; // Not using
 
@@ -48,6 +50,8 @@ Z: 3300 Hz
 ~morse_harmonic[6] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
 
 
+~m_tmps = Array.fill(6, {1.0});
+~m_amps = Array.fill(6, {1.0});
 
 ~morse_base = Array.newClear(100);
 ~morse_chain = Array.newClear(100);
@@ -57,19 +61,14 @@ Z: 3300 Hz
 
 
 // Functions
+~setAmp = Pbind(\amp, Pfunc { |ev| ev[\amp] * ev[\m_amp] });
+
 ~print_arr = {|arr|
 	arr.do{|item, index|
 		("item: " + item + " index: " + index).postln;
 	}
 };
 
-~set_all_legato = {|val|
-	// (2..5).do{|i|
-		~morse_chain[3].stop;
-		~morse_chain[3] =
-		(Pbind(\legato, val) <> ~morse_base[3]).play(~t_clocks[3]);
-// }
-};
 
 // MorseCodes Receiver
 OSCdef(\morseCode, { |msg|
@@ -85,6 +84,8 @@ OSCdef(\morseCode, { |msg|
 	("========= MoseCode "++idx++" =========").postln;
 	("msg: "++msg).postln;  // 수신된 메시지 출력
 	str = msg[1].asString;
+	~all_char_len = ~all_char_len + str.size;
+	("~all_char_len: "++~all_char_len).postln;
 	("str: " + str).postln;
 	("idx: " + idx).postln;
 	list = Array.newClear(str.size);
@@ -103,18 +104,16 @@ OSCdef(\morseCode, { |msg|
 			// \midinote, 68,
 			\freq, Pseq(~morse_harmonic[idx], inf),
 			\detune, 0.0,
-			\tempo, 1.0,
-			\m_amp, 1.0,
-			\amp, amps[idx-1] * Pfunc({|ev|ev[\m_amp].postln; ev[\m_amp]}),
+			\tempo, ~m_tmps[idx],
+			\m_amp, ~m_amps[idx],
+			\amp, amps[idx-1],
 			\dur, Pseq(list, inf),
 
 	));
 
 	~morse_chain[idx].stop;
 	~morse_chain[idx] =
-	(Pbind(\legato, 0.1) <>
-		Pbind(\tempo, 1.0) <>
-			~morse_base[idx]).play(~t_clocks[idx]);
+	(~setAmp <> ~morse_base[idx]).play(~t_clocks[idx]);
 
 }, '/morse_code', recvPort: 57120);
 
@@ -144,6 +143,14 @@ OSCdef(\cmd_revc1, { |msg, time, addr, port|
 OSCdef(\cmd_revc2, { |msg, time, addr, port|
 	"====Button_2====".postln;
 	msg.postln;
+	if (msg[1].class == True,
+		{ ~synth_2 = Synth(\sound_2) }
+	);
+
+	if (msg[1].class == False,
+		{ ~synth_2.free }
+	);
+
 
 }, '/play_synth_2', recvPort: 57120);
 
@@ -152,6 +159,14 @@ OSCdef(\cmd_revc2, { |msg, time, addr, port|
 OSCdef(\cmd_revc3, { |msg, time, addr, port|
 	"====Button_3====".postln;
 	msg.postln;
+	if (msg[1].class == True,
+		{ ~synth_3 = Synth(\sound_3) }
+	);
+
+	if (msg[1].class == False,
+		{ ~synth_3.free }
+	);
+
 
 }, '/play_synth_3', recvPort: 57120);
 
@@ -160,6 +175,14 @@ OSCdef(\cmd_revc3, { |msg, time, addr, port|
 OSCdef(\cmd_revc4, { |msg, time, addr, port|
 	"====Button_4====".postln;
 	msg.postln;
+	if (msg[1].class == True,
+		{ ~synth_4 = Synth(\sound_4) }
+	);
+
+	if (msg[1].class == False,
+		{ ~synth_4.free }
+	);
+
 
 }, '/play_synth_4', recvPort: 57120);
 
@@ -168,16 +191,16 @@ OSCdef(\cmd_revc4, { |msg, time, addr, port|
 OSCdef(\cmd_revc5, { |msg, time, addr, port|
 	"====Button_5====".postln;
 	msg.postln;
+	if (msg[1].class == True,
+		{ ~synth_5 = Synth(\sound_5) }
+	);
+
+	if (msg[1].class == False,
+		{ ~synth_5.free }
+	);
+
 
 }, '/play_synth_5', recvPort: 57120);
-
-
-//============= b-6 =============
-OSCdef(\cmd_revc6, { |msg, time, addr, port|
-	"====Button_6====".postln;
-	msg.postln;
-
-}, '/play_synth_6', recvPort: 57120);
 
 
 // Sliders
@@ -187,28 +210,37 @@ OSCdef(\sliders, { |msg, time, addr, port|
 	"====Slider_"++idx++"====".postln;
 	msg.postln;
 	val = msg[1].asInteger;
-	val.class.postln;
-	val = val.linlin(0, 100, 0.1, 2.0);
-	val.postln;
+	// val.class.postln;
+	// val.postln;
 
-
-
-	if (idx < 6, {
+	if (idx < 6, { // Tempo
+		val = val.linlin(5, 100, 0.1, 2.0);
+		~m_tmps[idx] = val;
 		~morse_chain[idx].stop;
 		~morse_chain[idx] =
-		(Pbind(\tempo, val) <> ~morse_base[idx]).play(~t_clocks[idx]);
+		(~setAmp <> Pbind(\tempo, ~m_tmps[idx]) <>
+			~morse_base[idx]).play(~t_clocks[idx]);
 	},{
-		if (idx < 11, {
+		if (idx < 11, { // Volume
+			val = val.linlin(5, 100, 0.0, 2.0);
+			~m_amps[idx - 5] = val;
+			("~m_amps[idx - 5]: "++~m_amps[idx - 5]).postln;
 			idx.postln;
-		~morse_chain[idx - 5].stop;
-		~morse_chain[idx - 5] =
-		(Pbind(\m_amp, val/2.0) <> ~morse_base[idx - 5]).play(~t_clocks[idx - 5]);
+			~morse_chain[idx - 5].stop;
+			~morse_chain[idx - 5] =
+			(~setAmp <>
+				Pbind(\m_amp, ~m_amps[idx - 5]) <>
+				~morse_base[idx - 5]).play(~t_clocks[idx - 5]);
 		})
 	}
 	);
 
-	if (idx == 11, {~rev.set(\mix, val/2.0, \room, val/2.0)});
-	if (idx == 12, {~set_all_legato.value(val/2.0)});
+	if (idx == 11, { // reverb
+		val = val.linlin(5, 100, 0.1, 1.0);
+		~rev.set(\mix, val, \room, val);
+	});
+
+	if (idx == 12, {});
 
 
 
