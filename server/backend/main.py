@@ -64,19 +64,25 @@ async def websocket_sc(websocket: WebSocket):
             data = await websocket.receive_json()
             print("Data: \n")
             print(data)
-       
+
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
                 # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
+            # 수신된 메시지 처리 비동기 작업
+            asyncio.create_task(handle_sc_message(data, websocket))
 
     except WebSocketDisconnect:
-        print("WebSocket connection closed")
+        print("WebSocket /ws/sc connection closed")
+        sc_clients.remove(websocket)
 
+async def handle_sc_message(data, websocket: WebSocket):
+    try:
+        if websocket.client_state == WebSocketState.CONNECTED:
+            await websocket.send_json({"response": "Processing your request..."})
     except Exception as e:
-        print(f"WebSocket Error: {e}")
-        await websocket.close()
+        print(f"Error sending /ws/sc message: {e}")
 
 
 @app.websocket("/ws/chat")
@@ -84,7 +90,6 @@ async def websocket_chat(websocket: WebSocket):
     global researcher_index  # 전역 변수로서 접근을 명시
     global synth_list
     global morse_test
-    global morse_idx
 
     await websocket.accept()
 
@@ -99,9 +104,17 @@ async def websocket_chat(websocket: WebSocket):
                 # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
-            response_message = ""
-            partial_message = ""
 
+            # 수신된 메시지 처리 비동기 작업
+            asyncio.create_task(handle_chat_message(data, websocket))
+    
+    except WebSocketDisconnect:
+        print("WebSocket /ws/chat 연결이 종료되었습니다.")
+
+async def handle_chat_message(data, websocket: WebSocket):
+    global morse_idx
+    try:
+        if 'type' in data:
             msg_type = data.get("type", "")
 
             if msg_type == "Test":
@@ -121,9 +134,8 @@ async def websocket_chat(websocket: WebSocket):
                         except Exception as e:
                             print(f"Error sending message: {e}")
                     morse_test = False
-                continue
 
-            if msg_type == "Button":
+            elif msg_type == "Button":
                 # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
                 print("Button...")
                 for sc_client in sc_clients:
@@ -136,9 +148,7 @@ async def websocket_chat(websocket: WebSocket):
                     except Exception as e:
                         print(f"Error sending message: {e}")
 
-                continue
-
-            if msg_type == "Slider":
+            elif msg_type == "Slider":
                 # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
                 print("Slider...")
                 for sc_client in sc_clients:
@@ -151,7 +161,9 @@ async def websocket_chat(websocket: WebSocket):
                     except Exception as e:
                         print(f"Error sending message: {e}")
 
-                continue
+        else:
+            response_message = ""
+            partial_message = ""
 
             user_input = data.get("message", "")
             # print("user_input: ", user_input)
@@ -216,11 +228,8 @@ async def websocket_chat(websocket: WebSocket):
                 partial_message = ""
                 await websocket.send_json({"response": "[END]", "agentType": key})
 
-            pprint.pprint("------------------------------------")
+        pprint.pprint("------------------------------------")
 
-
-    except WebSocketDisconnect:
-        print("WebSocket connection closed")
 
     except Exception as e:
         print(f"WebSocket Error: {e}")

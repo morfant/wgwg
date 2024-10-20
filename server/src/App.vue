@@ -104,8 +104,8 @@ export default {
         // if (index === 5) {
           // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
         // } else {
-          this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
-          // this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
+          // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
+          this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
         // }
       }
     },
