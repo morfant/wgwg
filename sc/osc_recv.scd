@@ -63,16 +63,22 @@ Z: 3300 Hz
 	}
 };
 
-
+~set_all_legato = {|val|
+	// (2..5).do{|i|
+		~morse_chain[3].stop;
+		~morse_chain[3] =
+		(Pbind(\legato, val) <> ~morse_base[3]).play(~t_clocks[3]);
+// }
+};
 
 // MorseCodes Receiver
 OSCdef(\morseCode, { |msg|
 	var idx, str, list;
 	var shortDur = 0.1;  // 짧은 소리 지속 시간
 	var longDur = 0.3;   // 긴 소리 지속 시간
-	var pauseDur = 0.5;  // 공백 대기 시간
-	var longpauseDur = 1.0;  // 문장 사이 공백 시간
-	var amps = [0.1, 0.1, 0.2, 0.05, 0.1];
+	var pauseDur = 0.6;  // 공백 대기 시간
+	var longpauseDur = 1.2;  // 문장 사이 공백 시간
+	var amps = [0.1, 0.1, 0.05, 0.08, 0.06];
 
 
 	idx = msg[2].asInteger;
@@ -98,14 +104,17 @@ OSCdef(\morseCode, { |msg|
 			\freq, Pseq(~morse_harmonic[idx], inf),
 			\detune, 0.0,
 			\tempo, 1.0,
-			\amp, amps[idx-1],
-			\dur, Pseq(list, inf) * Pfunc { |ev| ev[\tempo] },
+			\m_amp, 1.0,
+			\amp, amps[idx-1] * Pfunc({|ev|ev[\m_amp].postln; ev[\m_amp]}),
+			\dur, Pseq(list, inf),
 
 	));
 
 	~morse_chain[idx].stop;
 	~morse_chain[idx] =
-	(Pbind(\tempo, 1.0) <> ~morse_base[idx]).play(~t_clocks[idx]);
+	(Pbind(\legato, 0.1) <>
+		Pbind(\tempo, 1.0) <>
+			~morse_base[idx]).play(~t_clocks[idx]);
 
 }, '/morse_code', recvPort: 57120);
 
@@ -183,12 +192,24 @@ OSCdef(\sliders, { |msg, time, addr, port|
 	val.postln;
 
 
-	if (idx == 6, {~rev.set(\mix, val/2.0, \room, val/2.0)});
+
 	if (idx < 6, {
 		~morse_chain[idx].stop;
 		~morse_chain[idx] =
 		(Pbind(\tempo, val) <> ~morse_base[idx]).play(~t_clocks[idx]);
-	});
+	},{
+		if (idx < 11, {
+			idx.postln;
+		~morse_chain[idx - 5].stop;
+		~morse_chain[idx - 5] =
+		(Pbind(\m_amp, val/2.0) <> ~morse_base[idx - 5]).play(~t_clocks[idx - 5]);
+		})
+	}
+	);
+
+	if (idx == 11, {~rev.set(\mix, val/2.0, \room, val/2.0)});
+	if (idx == 12, {~set_all_legato.value(val/2.0)});
+
 
 
 }, '/set_slider', recvPort: 57120);

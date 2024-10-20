@@ -197,8 +197,7 @@ async def handle_chat_message(data, websocket: WebSocket):
 
                 # 0 = Dot, 1 = Dash, 2 = Space
                 if response_morse != '':
-                    morse_idx+=1 # 1 ~ 6
-                    morse_idx%=6
+                    morse_idx%=5
                     # 리스트의 요소를 연결하고 각 요소 사이에 숫자 3 추가 : 문장 사이를 3으로 표현
                     joined_string = '3'.join(response_morse)
                     # print("joined_string: ", joined_string)
@@ -212,6 +211,7 @@ async def handle_chat_message(data, websocket: WebSocket):
                                 print("Client is not connected.")
                         except Exception as e:
                             print(f"Error sending message: {e}")
+                    morse_idx+=1 
 
 
                 # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
