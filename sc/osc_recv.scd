@@ -1,17 +1,52 @@
-(
+
+(// Run first
 // Sounds
 "./sounds.scd".loadRelative;
+)
+
+(
+/*
+A: 100 Hz
+B: 228 Hz
+C: 356 Hz
+D: 484 Hz
+E: 612 Hz
+F: 740 Hz
+G: 868 Hz
+H: 996 Hz
+I: 1124 Hz
+J: 1252 Hz
+K: 1380 Hz
+L: 1508 Hz
+M: 1636 Hz
+N: 1764 Hz
+O: 1892 Hz
+P: 2020 Hz
+Q: 2148 Hz
+R: 2276 Hz
+S: 2404 Hz
+T: 2532 Hz
+U: 2660 Hz
+V: 2788 Hz
+W: 2916 Hz
+X: 3044 Hz
+Y: 3172 Hz
+Z: 3300 Hz
+*/
 
 //Vars
 ~synth_1 = nil;
 ~morse_harmonic = Array.newClear(7);
 ~morse_harmonic[0] = [500, 700, 900, 400, 600].scramble; // Not using
-~morse_harmonic[1] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
-~morse_harmonic[2] = [500, 700, 900, 400, 600, 1300, 1800].scramble;
-~morse_harmonic[3] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
-~morse_harmonic[4] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
-~morse_harmonic[5] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
+
+~morse_harmonic[1] = [740, 2276, 1124, 2532, 3300, 740, 2276]; // FRITZFR
+~morse_harmonic[2] = [484, 1892, 1764, 1764, 100, 484]; // DONNAD
+~morse_harmonic[3] = [228, 612, 1764, 228, 612, 1764]; // BENBEN
+~morse_harmonic[4] = [484, 100, 1764, 484, 100, 1764]; // DANDAN
+~morse_harmonic[5] = [2532, 1892, 1636, 2532, 1892, 1636]; // TOMTOM
+
 ~morse_harmonic[6] = [500, 700, 900, 400, 600, 100, 1500, 2100].scramble;
+
 
 
 ~morse_base = Array.newClear(100);
@@ -37,6 +72,7 @@ OSCdef(\morseCode, { |msg|
 	var longDur = 0.3;   // 긴 소리 지속 시간
 	var pauseDur = 0.5;  // 공백 대기 시간
 	var longpauseDur = 1.0;  // 문장 사이 공백 시간
+	var amps = [0.1, 0.1, 0.2, 0.05, 0.1];
 
 
 	idx = msg[2].asInteger;
@@ -62,6 +98,7 @@ OSCdef(\morseCode, { |msg|
 			\freq, Pseq(~morse_harmonic[idx], inf),
 			\detune, 0.0,
 			\tempo, 1.0,
+			\amp, amps[idx-1],
 			\dur, Pseq(list, inf) * Pfunc { |ev| ev[\tempo] },
 
 	));
@@ -143,12 +180,15 @@ OSCdef(\sliders, { |msg, time, addr, port|
 	val = msg[1].asInteger;
 	val.class.postln;
 	val = val.linlin(0, 100, 0.1, 2.0);
-	// ~synth_1.set(\freq, val);
 	val.postln;
 
-	~morse_chain[idx].stop;
-	~morse_chain[idx] =
-	(Pbind(\tempo, val) <> ~morse_base[idx]).play(~t_clocks[idx]);
+
+	if (idx == 6, {~rev.set(\mix, val/2.0, \room, val/2.0)});
+	if (idx < 6, {
+		~morse_chain[idx].stop;
+		~morse_chain[idx] =
+		(Pbind(\tempo, val) <> ~morse_base[idx]).play(~t_clocks[idx]);
+	});
 
 
 }, '/set_slider', recvPort: 57120);
@@ -230,8 +270,8 @@ OSCdef(\cmd_revc12, { |msg, time, addr, port|
 // Reverb
 ~rev = Synth(\FreeVerb2x2, [
 	\outbus, 0,
-	\mix, 0.4,
-	\room, 0.2,
+	\mix, 0.25,
+	\room, 0.25,
 	\damp, 0.5,
 ], addAction:\addToTail);
 
