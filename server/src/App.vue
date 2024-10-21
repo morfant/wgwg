@@ -49,7 +49,7 @@
 
       <!-- 슬라이더들 -->
       <div class="slider-container">
-        <h3>Sliders</h3>
+        <h3>Tempo Sliders</h3>
         <vue-slider
           v-for="(knob, index) in knobs"
           :key="index"
@@ -58,6 +58,29 @@
           :max="100"
           @change="handleSliderChange(index, knob.value)"
         />
+        <h3>Volume Sliders</h3>
+        <vue-slider
+          v-for="(knob, index) in vol_knobs"
+          :key="index+5"
+          v-model="knob.value"
+          :min="0"
+          :max="100"
+          @change="handleSliderChange(index+5, knob.value)"
+        />
+ 
+        <h3>Control Sliders</h3>
+        <div v-for="(knob, index) in con_knobs" :key="index + 5 + 5" style="margin-bottom: 20px;">
+        <label :for="'slider-' + (index + 5 + 5)">
+          {{ knob.label }}
+        </label>
+        <vue-slider
+          :id="'slider-' + (index + 5 + 5)"
+          v-model="knob.value"
+          :min="0"
+          :max="100"
+          @change="handleSliderChange(index + 5 + 5, knob.value)"
+        />
+      </div>
       </div>
     </div>
   </div>
@@ -79,14 +102,24 @@ export default {
       isFetching: false,
       isConnected: false,
       socket: null,
-      activeMenu: "WGWG - Agent들의 놀이터", // 기본 메뉴 제목
+      activeMenu: "WGWG 와글와글", // 기본 메뉴 제목
       buttons: [
         { active: false }, { active: false }, { active: false },
-        { active: false }, { active: false }, { active: false }
+        { active: false }, { active: false }
       ], // 토글 버튼 6개
       knobs: [
         { value: 50 }, { value: 50 }, { value: 50 },
-        { value: 50 }, { value: 50 }, { value: 50 }
+        { value: 50 }, { value: 50 }
+      ], // 슬라이더 5개
+
+      vol_knobs: [
+        { value: 50 }, { value: 50 }, { value: 50 },
+        { value: 50 }, { value: 50 }
+      ], // 슬라이더 5개
+
+      con_knobs: [
+        { value: 20, label: "Reverb" },
+        // { value: 20, label: "Duration" },
       ], // 슬라이더 6개
     };
 
@@ -104,8 +137,8 @@ export default {
         // if (index === 5) {
           // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
         // } else {
-          this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
-          // this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
+          // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
+          this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
         // }
       }
     },

@@ -45,6 +45,7 @@ researcher_index = 0
 
 # FOR TEST
 morse_test = False
+morse_idx = 0
 
 @app.websocket("/ws/sc")
 async def websocket_sc(websocket: WebSocket):
@@ -63,19 +64,25 @@ async def websocket_sc(websocket: WebSocket):
             data = await websocket.receive_json()
             print("Data: \n")
             print(data)
-       
+
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
                 # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
+            # 수신된 메시지 처리 비동기 작업
+            asyncio.create_task(handle_sc_message(data, websocket))
 
     except WebSocketDisconnect:
-        print("WebSocket connection closed")
+        print("WebSocket /ws/sc connection closed")
+        sc_clients.remove(websocket)
 
+async def handle_sc_message(data, websocket: WebSocket):
+    try:
+        if websocket.client_state == WebSocketState.CONNECTED:
+            await websocket.send_json({"response": "Processing your request..."})
     except Exception as e:
-        print(f"WebSocket Error: {e}")
-        await websocket.close()
+        print(f"Error sending /ws/sc message: {e}")
 
 
 @app.websocket("/ws/chat")
@@ -97,9 +104,17 @@ async def websocket_chat(websocket: WebSocket):
                 # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
-            response_message = ""
-            partial_message = ""
 
+            # 수신된 메시지 처리 비동기 작업
+            asyncio.create_task(handle_chat_message(data, websocket))
+    
+    except WebSocketDisconnect:
+        print("WebSocket /ws/chat 연결이 종료되었습니다.")
+
+async def handle_chat_message(data, websocket: WebSocket):
+    global morse_idx
+    try:
+        if 'type' in data:
             msg_type = data.get("type", "")
 
             if msg_type == "Test":
@@ -119,9 +134,8 @@ async def websocket_chat(websocket: WebSocket):
                         except Exception as e:
                             print(f"Error sending message: {e}")
                     morse_test = False
-                continue
 
-            if msg_type == "Button":
+            elif msg_type == "Button":
                 # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
                 print("Button...")
                 for sc_client in sc_clients:
@@ -134,9 +148,7 @@ async def websocket_chat(websocket: WebSocket):
                     except Exception as e:
                         print(f"Error sending message: {e}")
 
-                continue
-
-            if msg_type == "Slider":
+            elif msg_type == "Slider":
                 # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
                 print("Slider...")
                 for sc_client in sc_clients:
@@ -149,7 +161,9 @@ async def websocket_chat(websocket: WebSocket):
                     except Exception as e:
                         print(f"Error sending message: {e}")
 
-                continue
+        else:
+            response_message = ""
+            partial_message = ""
 
             user_input = data.get("message", "")
             # print("user_input: ", user_input)
@@ -160,14 +174,14 @@ async def websocket_chat(websocket: WebSocket):
             topic = ""
             # topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
             # topic = "AI로서 토론에 참여하고 있는 당신에게 인간은 어떤 도전과 변화에 직면하고 있다고 보이나요?, 그 속에서 인간의 본질은 어떻게 재정의될까요? 인간과 AI의 관계는 어떤 방향으로 나아갈 수 있을까요? 인간성에 새로운 질문을 던지며 그들의 본질을 위협하게 될까요?"
-            inputs = {"topic": topic, "messages":message } 
+            inputs = {"topic": topic, "messages":message, "feedback": "", "topic_changed": False } 
 
             for output in graph.stream(inputs, config):
                 # print("output:", output)
                 # response_data = output
                 # print(response_data)
                 response_message = ''
-                response_morese = ''
+                response_morse = ''
 
                 for key, value in output.items():
                     print(f"{key}: {value}")
@@ -179,13 +193,24 @@ async def websocket_chat(websocket: WebSocket):
                         for morse in value['morse']:
                             response_morse = morse.content        
 
-                    # for key_, value_ in value.items():
-                    #     print(f"{key_}: {value_}")
+                # 0 = Dot, 1 = Dash, 2 = Space
+                if response_morse != '':
+                    morse_idx%=5
+                    # 리스트의 요소를 연결하고 각 요소 사이에 숫자 3 추가 : 문장 사이를 3으로 표현
+                    joined_string = '3'.join(response_morse)
+                    # print("joined_string: ", joined_string)
+                    for sc_client in sc_clients:
+                        try:
+                            if sc_client.client_state == WebSocketState.CONNECTED:
+                                print("sending from messages...")
+                                message = { "type": "MorseCode", "index": morse_idx + 1, "value": joined_string}
+                                await sc_client.send_json(message)
+                            else:
+                                print("Client is not connected.")
+                        except Exception as e:
+                            print(f"Error sending message: {e}")
+                    morse_idx+=1 
 
-                # # 'content' 부분 추출
-                # # response_message = response_data['chatbot']['messages'][0].content  
-                # response_message = response_data['host']['messages'][0].content
-                # print("response_message: ", response_message)
 
                 # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
                 chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
@@ -201,11 +226,8 @@ async def websocket_chat(websocket: WebSocket):
                 partial_message = ""
                 await websocket.send_json({"response": "[END]", "agentType": key})
 
-            pprint.pprint("------------------------------------")
+        pprint.pprint("------------------------------------")
 
-
-    except WebSocketDisconnect:
-        print("WebSocket connection closed")
 
     except Exception as e:
         print(f"WebSocket Error: {e}")
