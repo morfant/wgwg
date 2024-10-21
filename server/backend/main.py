@@ -156,9 +156,7 @@ async def websocket_chat(websocket: WebSocket):
             # inputs = {"messages": user_input}
             # print("inputs: ", inputs)
             key = "Bot"
-
-            message = ""
-            
+            message = ""    
             topic = ""
             # topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
             # topic = "AI로서 토론에 참여하고 있는 당신에게 인간은 어떤 도전과 변화에 직면하고 있다고 보이나요?, 그 속에서 인간의 본질은 어떻게 재정의될까요? 인간과 AI의 관계는 어떤 방향으로 나아갈 수 있을까요? 인간성에 새로운 질문을 던지며 그들의 본질을 위협하게 될까요?"
