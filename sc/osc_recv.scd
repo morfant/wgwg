@@ -122,199 +122,109 @@ OSCdef(\morseCode, { |msg|
 
 
 // Buttons
-//============= b-1 =============
-OSCdef(\cmd_revc1, { |msg, time, addr, port|
-	"====Button_1====".postln;
-	msg.postln;
+OSCdef(\buttons, { |msg, time, addr, port|
+	var group, index, value;
+	#group, index, value = msg[1..];
+	("====Button_"++group++"_"++index++"====").postln;
 	// msg[1].postln;
 	// msg[1].class.postln;
-	if (msg[1].class == True,
-		{ ~synth_1 = Synth(\sound_1) }
-	);
+	switch(group,
+		1, {
+			SynthDef(\morse_1, { |freq = 140, dur = 0.2, amp = 0.1|
+				var sig = Impulse.ar(0) *
+				Line.ar(1, 0, 0.5, doneAction: 2);
+				sig = Ringz.ar(sig, freq*index, 0.1);
+				Out.ar(0, Pan2.ar(sig * amp, 0));
+			}).add;
+		},
+		2, {
+			SynthDef(\morse_2, { |freq = 770, dur = 0.15, amp = 0.1|
+				var sig = LFPar.ar(freq/index, 0.5) *
+				EnvGen.kr(Env.perc(0.01, dur), doneAction: 2);
+				Out.ar(0, Pan2.ar(sig * amp, 0.5));
+			}).add;
+		},
+		3, {
+			SynthDef(\morse_3, { |freq = 660, dur = 0.1, amp = 0.1, dt = 0.009|
+				var sig = Ringz.ar(
+					BrownNoise.ar(0.4) *
+					EnvGen.kr(Env.perc(0.01, dur), doneAction: 2), freq*index, dt);
+				sig = HPF.ar(sig, 800);
+				Out.ar(0, Pan2.ar(sig * amp, -0.5));
+			}).add;
 
-	if (msg[1].class == False,
-		{ ~synth_1.free }
-	);
+		},
+		4, {
+			SynthDef(\morse_4, { |freq = 660, dur = 0.1, amp = 0.01|
+				var sig = LFSaw.ar(freq/(index*1.5), mul: 0.7) *
+				EnvGen.kr(Env.perc(0.01, dur), doneAction: 2);
+				Out.ar(0, Pan2.ar(sig, 0.8, amp));
+			}).add;
 
-}, '/play_synth_1', recvPort: 57120);
+		},
+		5, {
+			SynthDef(\morse_5, {|freq = 800, f_div = #[100.0, 300.0], amp = 2, gate = 1.0|
+				var im, pc, sig;
+				im = Impulse.ar((index/2) + 1);
+				pc = PulseCount.ar(im);
+				gate = pc < 1;
+				sig = Decay2.ar(
+					im * LFSaw.kr(0.3, 1, -0.3, 0.3),
+					0.01,
+					0.4
+			) * Mix.ar(Pulse.ar([80 + ((index*300.0)/f_div[0]), 81 + ((index*500.0)/f_div[1])], 0.3))
+				* Linen.kr(gate, doneAction: 2) * 5;
+				Out.ar(0, Pan2.ar(sig * amp));
+			}).add;
 
-
-//============= b-2 =============
-OSCdef(\cmd_revc2, { |msg, time, addr, port|
-	"====Button_2====".postln;
-	msg.postln;
-	if (msg[1].class == True,
-		{ ~synth_2 = Synth(\sound_2) }
-	);
-
-	if (msg[1].class == False,
-		{ ~synth_2.free }
-	);
-
-
-}, '/play_synth_2', recvPort: 57120);
-
-
-//============= b-3 =============
-OSCdef(\cmd_revc3, { |msg, time, addr, port|
-	"====Button_3====".postln;
-	msg.postln;
-	if (msg[1].class == True,
-		{ ~synth_3 = Synth(\sound_3) }
-	);
-
-	if (msg[1].class == False,
-		{ ~synth_3.free }
-	);
-
-
-}, '/play_synth_3', recvPort: 57120);
-
-
-//============= b-4 =============
-OSCdef(\cmd_revc4, { |msg, time, addr, port|
-	"====Button_4====".postln;
-	msg.postln;
-	if (msg[1].class == True,
-		{ ~synth_4 = Synth(\sound_4) }
-	);
-
-	if (msg[1].class == False,
-		{ ~synth_4.free }
-	);
-
-
-}, '/play_synth_4', recvPort: 57120);
-
-
-//============= b-5 =============
-OSCdef(\cmd_revc5, { |msg, time, addr, port|
-	"====Button_5====".postln;
-	msg.postln;
-	if (msg[1].class == True,
-		{ ~synth_5 = Synth(\sound_5) }
-	);
-
-	if (msg[1].class == False,
-		{ ~synth_5.free }
+		},
+		{}
 	);
 
 
-}, '/play_synth_5', recvPort: 57120);
+}, '/play_synth', recvPort: 57120);
 
 
 // Sliders
 OSCdef(\sliders, { |msg, time, addr, port|
-	var idx, str, list, val = nil;
-	idx = msg[2];
-	"====Slider_"++idx++"====".postln;
-	msg.postln;
-	val = msg[1].asInteger;
+	var group, index, value, val;
+	#group, index, value = msg[1..];
+	("====Slider_"++group++"_"++index++"====").postln;
+
+	val = value.asInteger;
 	// val.class.postln;
 	// val.postln;
 
-	if (idx < 6, { // Tempo
-		val = val.linlin(5, 100, 0.1, 2.0);
-		~m_tmps[idx] = val;
-		~morse_chain[idx].stop;
-		~morse_chain[idx] =
-		(~setAmp <> Pbind(\tempo, ~m_tmps[idx]) <>
-			~morse_base[idx]).play(~t_clocks[idx]);
-	},{
-		if (idx < 11, { // Volume
+	if (group != 0, {
+		if (index == 1, { // Tempo
+			val = val.linlin(5, 100, 0.1, 2.0);
+			~m_tmps[group] = val;
+			("~m_tmps["++group++"]: "++~m_tmps[group]).postln;
+			~morse_chain[group].stop;
+			~morse_chain[group] =
+			(~setAmp <> Pbind(\tempo, ~m_tmps[group]) <>
+				~morse_base[group]).play(~t_clocks[group]);
+		});
+		if (index == 2, { // Volume
 			val = val.linlin(5, 100, 0.0, 2.0);
-			~m_amps[idx - 5] = val;
-			("~m_amps[idx - 5]: "++~m_amps[idx - 5]).postln;
-			idx.postln;
-			~morse_chain[idx - 5].stop;
-			~morse_chain[idx - 5] =
+			~m_amps[group] = val;
+			("~m_amps["++group++"]: "++~m_amps[group]).postln;
+			~morse_chain[group].stop;
+			~morse_chain[group] =
 			(~setAmp <>
-				Pbind(\m_amp, ~m_amps[idx - 5]) <>
-				~morse_base[idx - 5]).play(~t_clocks[idx - 5]);
-		})
-	}
-	);
+				Pbind(\m_amp, ~m_amps[group]) <>
+				~morse_base[group]).play(~t_clocks[group]);
+		});
+	});
 
-	if (idx == 11, { // reverb
+	if (group == 0, { // Reverb
 		val = val.linlin(5, 100, 0.1, 1.0);
 		~rev.set(\mix, val, \room, val);
 	});
 
-	if (idx == 12, {});
-
 
 
 }, '/set_slider', recvPort: 57120);
-
-
-
-//============= s-1 =============
-OSCdef(\cmd_revc7, { |msg, time, addr, port|
-	var val = nil;
-	"====Slider_1====".postln;
-	msg.postln;
-	val = msg[1].asInteger;
-	val.class.postln;
-	val = val.linlin(0, 100, 0.1, 1.2);
-	// ~synth_1.set(\freq, val);
-	val.postln;
-
-	~morse_chain[1].stop;
-	~morse_chain[1] =
-	(Pbind(\tempo, val) <> ~morse_base[1]).play(~t_clocks[1]);
-
-
-}, '/set_synth_1', recvPort: 57120);
-
-
-//============= s-2 =============
-OSCdef(\cmd_revc8, { |msg, time, addr, port|
-	var val = nil;
-	"====Slider_2====".postln;
-	msg.postln;
-	val = msg[1].asInteger;
-	val.class.postln;
-	val = val.linlin(0, 100, 0.1, 1.2);
-	val.postln;
-
-	~morse_chain[2].stop;
-	~morse_chain[2] =
-	(Pbind(\tempo, val) <> ~morse_base[2]).play(~t_clocks[2]);
-
-
-}, '/set_synth_2', recvPort: 57120);
-
-
-//============= s-3 =============
-OSCdef(\cmd_revc9, { |msg, time, addr, port|
-	"====Slider_3====".postln;
-	msg.postln;
-
-}, '/set_synth_3', recvPort: 57120);
-
-
-//============= s-4 =============
-OSCdef(\cmd_revc10, { |msg, time, addr, port|
-	"====Slider_4====".postln;
-	msg.postln;
-
-}, '/set_synth_4', recvPort: 57120);
-
-
-//============= s-5 =============
-OSCdef(\cmd_revc11, { |msg, time, addr, port|
-	"====Slider_5====".postln;
-	msg.postln;
-
-}, '/set_synth_5', recvPort: 57120);
-
-
-//============= s-6 =============
-OSCdef(\cmd_revc12, { |msg, time, addr, port|
-	"====Slider_6====".postln;
-	msg.postln;
-
-}, '/set_synth_6', recvPort: 57120);
 
 
 

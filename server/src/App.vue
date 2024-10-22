@@ -43,23 +43,28 @@
         </button>
         <div class="button-row">
           <button 
-            v-for="(btn, index) in 4" 
+            v-for="(btn, index) in 5" 
             :key="index" 
             :class="['toggle-btn', { active: isActiveButton(n, index) }]"
             @click="toggleButtonInGroup(n, index)">
             {{ index + 1 }}
           </button>
         </div>
+        <label :for="'slider-' + n" class="slider-label">Tempo {{ n }}</label>
         <vue-slider 
           v-model="tempo[n - 1]" 
           :min="0" 
           :max="100" 
-          @change="handleSliderChange(`tempo${n}`, tempo[n - 1])" />
+          :id="'slider-' + n"
+          @change="handleSliderChange(n, 1, tempo[n - 1])" />
+
+        <label :for="'slider-' + n" class="slider-label">Volume {{ n }}</label>
         <vue-slider 
           v-model="volume[n - 1]" 
           :min="0" 
           :max="100" 
-          @change="handleSliderChange(`volume${n}`, volume[n - 1])" />
+          :id="'slider-' + n"
+          @change="handleSliderChange(n, 2, volume[n - 1])" />
       </div>
 
 
@@ -98,7 +103,7 @@
       -->
  
       <div class="slider-container">
-        <h3>Control Sliders</h3>
+        <!-- <h3>Control Sliders</h3> -->
         <div v-for="(knob, index) in con_knobs" :key="index + 5 + 5" style="margin-bottom: 20px;">
         <label :for="'slider-' + (index + 5 + 5)">
           {{ knob.label }}
@@ -108,7 +113,7 @@
           v-model="knob.value"
           :min="0"
           :max="100"
-          @change="handleSliderChange(index + 5 + 5, knob.value)"
+          @change="handleSliderChange(0, index + 5 + 5, knob.value)"
         />
       </div>
 
@@ -149,7 +154,7 @@ export default {
         // { value: 20, label: "Duration" },
       ], // 슬라이더 6개
 
-      buttons: Array(20).fill(false).map((_, i) => i % 4 === 0),
+      buttons: Array(25).fill(false).map((_, i) => i % 5 === 0),
       selectedGroup: 1, // 현재 선택된 그룹 (1 ~ 5)
       tempo: Array(5).fill(50), // 각 그룹별 tempo 값 초기화
       volume: Array(5).fill(50), // 각 그룹별 volume 값 초기화
@@ -158,8 +163,8 @@ export default {
   },
   methods: {
       toggleButtonInGroup(group, index) {
-      const start = (group - 1) * 4; // 그룹의 첫 번째 버튼 인덱스
-      const end = start + 4;         // 그룹의 마지막 버튼 인덱스
+      const start = (group - 1) * 5; // 그룹의 첫 번째 버튼 인덱스
+      const end = start + 5;         // 그룹의 마지막 버튼 인덱스
 
       // 같은 그룹의 모든 버튼을 비활성화
       for (let i = start; i < end; i++) {
@@ -173,20 +178,33 @@ export default {
 
       // 버튼에 대한 동작 정의 (WebSocket 전송)
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(
-          JSON.stringify({
-            type: "Button",
-            group: group,
-            index: index + 1,
-            value: this.buttons[start + index],
-          })
-        );
+
+        if (group === 1) {
+          this.socket.send(
+            JSON.stringify({
+              type: "Test",
+              group: group,
+              index: index + 1,
+              value: this.buttons[start + index],
+            })
+          );
+        } else {
+          this.socket.send(
+            JSON.stringify({
+              type: "Button",
+              group: group,
+              index: index + 1,
+              value: this.buttons[start + index],
+            })
+          );
+        }
+
       }
     },
 
     // 현재 그룹에서 어떤 버튼이 활성화 상태인지 확인하는 메서드
     isActiveButton(group, index) {
-      const start = (group - 1) * 4;
+      const start = (group - 1) * 5;
       return this.buttons[start + index];
     },
 
@@ -197,31 +215,33 @@ export default {
       return this.selectedGroup === group;
     },
     getButtonsForGroup(group) {
-      const start = (group - 1) * 4;
-      return this.buttons.slice(start, start + 4);
+      const start = (group - 1) * 5;
+      return this.buttons.slice(start, start + 5);
     },
 
-    toggleButton(index) {
-      this.buttons[index].active = !this.buttons[index].active;
-      var state = this.buttons[index].active;
-      console.log(`Button ${index + 1} toggled: ${this.buttons[index].active}`);
+    // toggleButton(index) {
+    //   this.buttons[index].active = !this.buttons[index].active;
+    //   var state = this.buttons[index].active;
+    //   console.log(`Button ${index + 1} toggled: ${this.buttons[index].active}`);
 
 
-      // 버튼에 대한 동작 정의
-      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        // if (index === 5) {
-          // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
-        // } else {
-          // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
-          this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
-        // }
-      }
-    },
-    handleSliderChange(index, val) {
-      console.log(`Slider ${index + 1} changed to ${val}`);
+    //   // 버튼에 대한 동작 정의
+    //   if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+    //     // if (index === 5) {
+    //       // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
+    //     // } else {
+    //       // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
+    //       this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
+    //     // }
+    //   }
+    // },
+    handleSliderChange(group, index, val) {
+      console.log(`Group ${group}, Slider ${index} changed to ${val}`);
+
+      // console.log(`Slider ${index + 1} changed to ${val}`);
       // 슬라이더 값 변경에 대한 동작 정의
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        this.socket.send(JSON.stringify({ type: "Slider", index: index + 1, value: val}));
+        this.socket.send(JSON.stringify({ type: "Slider", group: group, index: index, value: val}));
       }
     },
     handleButtonClick() {

@@ -126,7 +126,8 @@ async def handle_chat_message(data, websocket: WebSocket):
                         try:
                             if sc_client.client_state == WebSocketState.CONNECTED:
                                 print("sending from messages...")
-                                message = { "type": "Sentance", "index": data.get("index", ""), "value": [0, 1, 2, 0, 1]}
+                                # message = { "type": "MorseCode", "index": data.get("index", ""), "value": [0, 1, 2, 0, 1]}
+                                message = { "type": "MorseCode", "group":data.get("group", 1), "index": data.get("index", 1), "value": "0120123101"}                                
                                 # sock.sendall(message.encode('utf-8'))  # 문자열을 바이트로 인코딩해 전송
                                 await sc_client.send_json(message)
                             else:

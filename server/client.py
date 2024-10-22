@@ -31,16 +31,17 @@ async def connect_to_server():
             data = json.loads(response)
             if "type" in data:
                 type = data["type"]
+                group = data["group"]
                 index = data["index"]
                 value = data["value"]
-                print(f"[Client] {type} / {index} / {value}")
+                print(f"[Client] {type} / {group} / {index} / {value}")
 
                 if type == "Button":
                     random_value = random.uniform(0.0, 1.0)
-                    client.send_message(f"/play_synth_{index}", value)
+                    client.send_message(f"/play_synth", [group, index, value])
                 
                 if type == "Slider":
-                    client.send_message(f"/set_slider", [value, index])
+                    client.send_message(f"/set_slider", [group, index, value])
                     
                 if type == "MorseCode":
                     val_str = array_to_string(value)

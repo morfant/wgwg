@@ -206,11 +206,6 @@ h1 {
 }
 
 
-
-
-
-
-
 .app-container {
   display: flex;
   flex-direction: row;
@@ -218,7 +213,7 @@ h1 {
 }
 
 .chat-section {
-  width: 60%;
+  width: 70%;
   padding: 20px;
   background-color: #f5e0c9;
   display: flex;
@@ -255,23 +250,23 @@ h1 {
 }
 
 .control-section {
-  width: 40%;
+  width: 30%;
   padding: 20px;
   background-color: #d4edda;
 }
 
 .button-container {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
 .toggle-btn {
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   background-color: #6f42c1;
   color: white;
   margin: 5px;
   border: none;
-  border-radius: 50%;
+  border-radius: 20%;
   cursor: pointer;
 }
 
@@ -280,11 +275,11 @@ h1 {
 }
 
 .slider-container {
-  margin-top: 20px; /* 슬라이더와 버튼 사이의 간격 */
+  margin-top: 30px; /* 슬라이더와 버튼 사이의 간격 */
 }
 
 .vue-slider {
-  margin: 10px 0; /* 슬라이더의 상하 여백 */
+  margin: 0px 0; /* 슬라이더의 상하 여백 */
   width: 100%; /* 슬라이더의 폭을 전체 너비로 설정 */
 }
 
@@ -299,5 +294,12 @@ h1 {
   background-color: #ddd; /* 레일 색상 */
 }
 
+.slider-label {
+  font-size: 15px;
+  /* font-weight: bold; */
+  margin-bottom: 0px;
+}
 
-
+.group {
+  margin-bottom: 20px; /* 각 그룹 사이에 20px 간격 추가 */
+}
