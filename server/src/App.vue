@@ -32,9 +32,38 @@
     
     <!-- 오른쪽 영역: 토글 버튼 및 슬라이더 -->
     <div class="control-section">
-      <h2>Control Panel</h2>
 
-      <!-- 토글 버튼들 -->
+      <!-- 1번 그룹 -->
+      <div class="group" v-for="n in 5" :key="n">
+        <button 
+          class="big-btn" 
+          :class="{ active: isActive(n) }" 
+          @click="selectGroup(n)">
+          {{ n }}
+        </button>
+        <div class="button-row">
+          <button 
+            v-for="(btn, index) in 4" 
+            :key="index" 
+            :class="['toggle-btn', { active: isActiveButton(n, index) }]"
+            @click="toggleButtonInGroup(n, index)">
+            {{ index + 1 }}
+          </button>
+        </div>
+        <vue-slider 
+          v-model="tempo[n - 1]" 
+          :min="0" 
+          :max="100" 
+          @change="handleSliderChange(`tempo${n}`, tempo[n - 1])" />
+        <vue-slider 
+          v-model="volume[n - 1]" 
+          :min="0" 
+          :max="100" 
+          @change="handleSliderChange(`volume${n}`, volume[n - 1])" />
+      </div>
+
+
+      <!--
       <div class="button-container">
         <h3>Toggle Buttons</h3>
         <button
@@ -47,7 +76,6 @@
         </button>
       </div>
 
-      <!-- 슬라이더들 -->
       <div class="slider-container">
         <h3>Tempo Sliders</h3>
         <vue-slider
@@ -67,7 +95,9 @@
           :max="100"
           @change="handleSliderChange(index+5, knob.value)"
         />
+      -->
  
+      <div class="slider-container">
         <h3>Control Sliders</h3>
         <div v-for="(knob, index) in con_knobs" :key="index + 5 + 5" style="margin-bottom: 20px;">
         <label :for="'slider-' + (index + 5 + 5)">
@@ -81,6 +111,7 @@
           @change="handleSliderChange(index + 5 + 5, knob.value)"
         />
       </div>
+
       </div>
     </div>
   </div>
@@ -103,30 +134,74 @@ export default {
       isConnected: false,
       socket: null,
       activeMenu: "WGWG 와글와글", // 기본 메뉴 제목
-      buttons: [
-        { active: false }, { active: false }, { active: false },
-        { active: false }, { active: false }
-      ], // 토글 버튼 6개
-      knobs: [
-        { value: 50 }, { value: 50 }, { value: 50 },
-        { value: 50 }, { value: 50 }
-      ], // 슬라이더 5개
+      // knobs: [
+      //   { value: 50 }, { value: 50 }, { value: 50 },
+      //   { value: 50 }, { value: 50 }
+      // ], // 슬라이더 5개
 
-      vol_knobs: [
-        { value: 50 }, { value: 50 }, { value: 50 },
-        { value: 50 }, { value: 50 }
-      ], // 슬라이더 5개
+      // vol_knobs: [
+      //   { value: 50 }, { value: 50 }, { value: 50 },
+      //   { value: 50 }, { value: 50 }
+      // ], // 슬라이더 5개
 
       con_knobs: [
         { value: 20, label: "Reverb" },
         // { value: 20, label: "Duration" },
       ], // 슬라이더 6개
-    };
 
+      buttons: Array(20).fill(false).map((_, i) => i % 4 === 0),
+      selectedGroup: 1, // 현재 선택된 그룹 (1 ~ 5)
+      tempo: Array(5).fill(50), // 각 그룹별 tempo 값 초기화
+      volume: Array(5).fill(50), // 각 그룹별 volume 값 초기화
+
+    };
   },
   methods: {
-    toggleButton(index) {
+      toggleButtonInGroup(group, index) {
+      const start = (group - 1) * 4; // 그룹의 첫 번째 버튼 인덱스
+      const end = start + 4;         // 그룹의 마지막 버튼 인덱스
 
+      // 같은 그룹의 모든 버튼을 비활성화
+      for (let i = start; i < end; i++) {
+        this.buttons[i] = false;
+      }
+
+      // 클릭한 버튼만 활성화
+      this.buttons[start + index] = true;
+
+      console.log(`Group ${group}, Button ${index + 1} toggled: ${this.buttons[start + index]}`);
+
+      // 버튼에 대한 동작 정의 (WebSocket 전송)
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        this.socket.send(
+          JSON.stringify({
+            type: "Button",
+            group: group,
+            index: index + 1,
+            value: this.buttons[start + index],
+          })
+        );
+      }
+    },
+
+    // 현재 그룹에서 어떤 버튼이 활성화 상태인지 확인하는 메서드
+    isActiveButton(group, index) {
+      const start = (group - 1) * 4;
+      return this.buttons[start + index];
+    },
+
+    selectGroup(group) {
+      this.selectedGroup = group;
+    },
+    isActive(group) {
+      return this.selectedGroup === group;
+    },
+    getButtonsForGroup(group) {
+      const start = (group - 1) * 4;
+      return this.buttons.slice(start, start + 4);
+    },
+
+    toggleButton(index) {
       this.buttons[index].active = !this.buttons[index].active;
       var state = this.buttons[index].active;
       console.log(`Button ${index + 1} toggled: ${this.buttons[index].active}`);
