@@ -61,12 +61,10 @@ async def websocket_sc(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
-            print("Data: \n")
-            print(data)
+            print("Data: \n", data)
 
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
-                # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
             # 수신된 메시지 처리 비동기 작업
@@ -124,9 +122,6 @@ async def handle_chat_message(data, websocket: WebSocket):
         partial_message = ""
 
         user_input = data.get("message", "")
-        # print("user_input: ", user_input)
-        # inputs = {"messages": user_input}
-        # print("inputs: ", inputs)
         key = "Bot"
         message = ""    
         topic = ""
@@ -135,9 +130,6 @@ async def handle_chat_message(data, websocket: WebSocket):
         inputs = {"topic": topic, "messages":message, "feedback": "", "topic_changed": False } 
 
         for output in graph.stream(inputs, config):
-            # print("output:", output)
-            # response_data = output
-            # print(response_data)
             response_message = ''
             response_morse = ''
 
@@ -197,7 +189,7 @@ async def handle_chat_message(data, websocket: WebSocket):
         await websocket.close()
 
 async def broadcast_to_all_chat_clients(message: dict):
-    """모든 /ws/chat 클라이언트에게 메시지를 전송합니다."""
+    """모든 /ws/chat 클라이언트에게 토론 메시지를 전송합니다."""
     for client in chat_clients:
         try:
             if client.client_state == WebSocketState.CONNECTED:
@@ -215,13 +207,12 @@ async def broadcast_to_all_except_sender(sender: WebSocket, data: dict):
         morse_test = True
 
         if morse_test == True:
+            # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
             for sc_client in sc_clients:
                 try:
                     if sc_client.client_state == WebSocketState.CONNECTED:
                         print("sending from messages...")
-                        # message = { "type": "MorseCode", "index": data.get("index", ""), "value": [0, 1, 2, 0, 1]}
                         message = { "type": "MorseCode", "group":data.get("group", 1), "index": data.get("index", 1), "value": "0120123101"}                                
-                        # sock.sendall(message.encode('utf-8'))  # 문자열을 바이트로 인코딩해 전송
                         await sc_client.send_json(message)
                     else:
                         print("Client is not connected.")
