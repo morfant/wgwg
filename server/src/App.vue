@@ -50,7 +50,7 @@
             {{ index + 1 }}
           </button>
         </div>
-        <label :for="'slider-' + n" class="slider-label">Tempo {{ n }}</label>
+        <!--<label :for="'slider-' + n" class="slider-label">Tempo {{ n }}</label>-->
         <vue-slider 
           v-model="tempo[n - 1]" 
           :min="0" 
@@ -58,7 +58,7 @@
           :id="'slider-' + n"
           @change="handleSliderChange(n, 1, tempo[n - 1])" />
 
-        <label :for="'slider-' + n" class="slider-label">Volume {{ n }}</label>
+        <!--<label :for="'slider-' + n" class="slider-label">Volume {{ n }}</label>-->
         <vue-slider 
           v-model="volume[n - 1]" 
           :min="0" 
@@ -105,9 +105,9 @@
       <div class="slider-container">
         <!-- <h3>Control Sliders</h3> -->
         <div v-for="(knob, index) in con_knobs" :key="index + 5 + 5" style="margin-bottom: 20px;">
-        <label :for="'slider-' + (index + 5 + 5)">
+        <!-- <label :for="'slider-' + (index + 5 + 5)">
           {{ knob.label }}
-        </label>
+        </label> -->
         <vue-slider
           :id="'slider-' + (index + 5 + 5)"
           v-model="knob.value"
@@ -179,16 +179,16 @@ export default {
       // 버튼에 대한 동작 정의 (WebSocket 전송)
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 
-        if (group === 1) {
-          this.socket.send(
-            JSON.stringify({
-              type: "Test",
-              group: group,
-              index: index + 1,
-              value: this.buttons[start + index],
-            })
-          );
-        } else {
+        // if (group === 1) {
+        //   this.socket.send(
+        //     JSON.stringify({
+        //       type: "Test",
+        //       group: group,
+        //       index: index + 1,
+        //       value: this.buttons[start + index],
+        //     })
+        //   );
+        // } else {
           this.socket.send(
             JSON.stringify({
               type: "Button",
@@ -197,7 +197,7 @@ export default {
               value: this.buttons[start + index],
             })
           );
-        }
+        // }
 
       }
     },

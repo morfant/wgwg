@@ -279,7 +279,7 @@ h1 {
 }
 
 .vue-slider {
-  margin: 0px 0; /* 슬라이더의 상하 여백 */
+  margin: 10px 0; /* 슬라이더의 상하 여백 */
   width: 100%; /* 슬라이더의 폭을 전체 너비로 설정 */
 }
 
@@ -301,5 +301,5 @@ h1 {
 }
 
 .group {
-  margin-bottom: 20px; /* 각 그룹 사이에 20px 간격 추가 */
+  margin-bottom: 40px; /* 각 그룹 사이에 20px 간격 추가 */
 }
