@@ -204,7 +204,7 @@ async def handle_chat_message(data, websocket: WebSocket):
                         try:
                             if sc_client.client_state == WebSocketState.CONNECTED:
                                 print("sending from messages...")
-                                message = { "type": "MorseCode", "index": morse_idx + 1, "value": joined_string}
+                                message = { "type": "MorseCode", "group": 100, "index": morse_idx + 1, "value": joined_string}
                                 await sc_client.send_json(message)
                             else:
                                 print("Client is not connected.")
