@@ -12,19 +12,8 @@ from fastapi.websockets import WebSocketState  # WebSocketState 임포트
 import asyncio
 # from agent import get_graph  # 에이전트 가져오기
 from agent_multi import get_graph  # 에이전트 가져오기
-from langchain_core.messages import AIMessage
 from langchain_core.runnables.config import RunnableConfig
-from pythonosc import udp_client
 
-
-# SuperCollider가 실행 중인 로컬 서버와 포트
-client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
-# 저장할 경로를 설정 (예: 'scd_files' 디렉토리)
-save_directory = "scd_files"
-
-# 디렉토리가 존재하지 않으면 생성
-if not os.path.exists(save_directory):
-    os.makedirs(save_directory)
 
 app = FastAPI()
 

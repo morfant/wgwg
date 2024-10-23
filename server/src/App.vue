@@ -221,6 +221,7 @@ export default {
 
     // 컴포넌트가 마운트될 때 웹소켓 연결 설정
     this.socket = new WebSocket('ws://localhost:4001/ws/chat');
+    // this.socket = new WebSocket('ws://unbarrier.net:4001/ws/chat');
 
     this.socket.onopen = () => {
       console.log("WebSocket connection opened");
