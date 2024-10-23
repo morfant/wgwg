@@ -222,7 +222,7 @@ async def handle_chat_message(data, websocket: WebSocket):
                         # print("new_message: ", new_message)
                         # print("new_message_unicode: ", ord(new_message))
                         await websocket.send_json({"response": partial_message, "agentType": key})
-                        await asyncio.sleep(0.025)  # 타이핑 딜레이
+                        await asyncio.sleep(0.075)  # 타이핑 딜레이
 
                 partial_message = ""
                 await websocket.send_json({"response": "[END]", "agentType": key})
