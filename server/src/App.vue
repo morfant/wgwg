@@ -15,13 +15,13 @@
       <div class="input-container">
         <input
           v-model="userInput"
-          @keyup.enter="handleButtonClick"
+          @keyup.enter="sendButtonClick"
           placeholder="Type a message..."
           class="input-box"
           :disabled="isFetching || !isConnected"
         />
         <button 
-          @click="handleButtonClick" 
+          @click="sendButtonClick" 
           class="send-button"
           :disabled="isFetching || !isConnected"
         >
@@ -67,41 +67,6 @@
           @change="handleSliderChange(n, 2, volume[n - 1])" />
       </div>
 
-
-      <!--
-      <div class="button-container">
-        <h3>Toggle Buttons</h3>
-        <button
-          v-for="(btn, index) in buttons"
-          :key="index"
-          :class="['toggle-btn', { active: btn.active }]"
-          @click="toggleButton(index)"
-        >
-          {{ index + 1 }}
-        </button>
-      </div>
-
-      <div class="slider-container">
-        <h3>Tempo Sliders</h3>
-        <vue-slider
-          v-for="(knob, index) in knobs"
-          :key="index"
-          v-model="knob.value"
-          :min="0"
-          :max="100"
-          @change="handleSliderChange(index, knob.value)"
-        />
-        <h3>Volume Sliders</h3>
-        <vue-slider
-          v-for="(knob, index) in vol_knobs"
-          :key="index+5"
-          v-model="knob.value"
-          :min="0"
-          :max="100"
-          @change="handleSliderChange(index+5, knob.value)"
-        />
-      -->
- 
       <div class="slider-container">
         <!-- <h3>Control Sliders</h3> -->
         <div v-for="(knob, index) in con_knobs" :key="index + 5 + 5" style="margin-bottom: 20px;">
@@ -139,16 +104,6 @@ export default {
       isConnected: false,
       socket: null,
       activeMenu: "WGWG 와글와글", // 기본 메뉴 제목
-      // knobs: [
-      //   { value: 50 }, { value: 50 }, { value: 50 },
-      //   { value: 50 }, { value: 50 }
-      // ], // 슬라이더 5개
-
-      // vol_knobs: [
-      //   { value: 50 }, { value: 50 }, { value: 50 },
-      //   { value: 50 }, { value: 50 }
-      // ], // 슬라이더 5개
-
       con_knobs: [
         { value: 20, label: "Reverb" },
         // { value: 20, label: "Duration" },
@@ -179,6 +134,7 @@ export default {
       // 버튼에 대한 동작 정의 (WebSocket 전송)
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
 
+        // For Test in local
         // if (group === 1) {
         //   this.socket.send(
         //     JSON.stringify({
@@ -218,33 +174,14 @@ export default {
       const start = (group - 1) * 5;
       return this.buttons.slice(start, start + 5);
     },
-
-    // toggleButton(index) {
-    //   this.buttons[index].active = !this.buttons[index].active;
-    //   var state = this.buttons[index].active;
-    //   console.log(`Button ${index + 1} toggled: ${this.buttons[index].active}`);
-
-
-    //   // 버튼에 대한 동작 정의
-    //   if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-    //     // if (index === 5) {
-    //       // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
-    //     // } else {
-    //       // this.socket.send(JSON.stringify({ type: "Test", index: index + 1, value: state }));
-    //       this.socket.send(JSON.stringify({ type: "Button", index: index + 1, value: state }));
-    //     // }
-    //   }
-    // },
     handleSliderChange(group, index, val) {
-      console.log(`Group ${group}, Slider ${index} changed to ${val}`);
-
-      // console.log(`Slider ${index + 1} changed to ${val}`);
       // 슬라이더 값 변경에 대한 동작 정의
+      console.log(`Group ${group}, Slider ${index} changed to ${val}`);
       if (this.socket && this.socket.readyState === WebSocket.OPEN) {
         this.socket.send(JSON.stringify({ type: "Slider", group: group, index: index, value: val}));
       }
     },
-    handleButtonClick() {
+    sendButtonClick() {
       if (!this.isFetching) {
         this.sendMessage();
       }
@@ -301,29 +238,59 @@ export default {
 
     this.socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log(data.response);
+      // console.log("서버 메시지 수신:", data);
 
-      const { agentType, response } = data;
-      console.log("agentType: ", agentType)
-      console.log(this.messages)
-      if (data.response === "[END]") {
-        this.isFetching = false;
-      } else {
-        if (
-          this.messages.length > 0 &&
-          this.messages[this.messages.length - 1].sender === "Bot" &&
-          this.messages[this.messages.length - 1].agentType === agentType
-        ) {
-          // msg block에 내용 업데이트
-          console.log("Updating...")
-          const lastMessage = this.messages[this.messages.length - 1];
-          lastMessage.text = response;
-        } else {
-          // msg block 새로 만듦
-          console.log("New block...")
-          this.messages.push({ sender: "Bot", text: response, agentType: agentType });
+      if (data.type) {
+        const { type, group, index, value } = data;
+        if (type === "Button") {
+          console.log(`Button Event: Group ${group}, Index ${index}, Value ${value}`);
+
+          // 버튼 상태 업데이트 (버튼 배열에서 해당 인덱스의 값을 설정)
+          const start = (group - 1) * 5;
+          this.buttons.fill(false, start, start + 5); // 해당 그룹의 버튼들 초기화
+          this.buttons[start + index - 1] = value;    // 특정 버튼 활성화
         }
-        this.updateScroll(); // 메시지가 추가될 때마다 스크롤
+
+        if (type === "Slider") {
+          console.log(`Slider Event: Group ${group}, Slider ${index}, Value ${value}`);
+
+          if (index == 1) {
+            // 그룹별 Tempo 슬라이더 갱신
+            this.tempo.splice(group - 1, 1, value);  // tempo 배열의 값 변경
+          } else if (index == 2) {
+            // 그룹별 Volume 슬라이더 갱신
+            this.volume.splice(group - 1, 1, value); // volume 배열의 값 변경
+          } else {
+            // 컨트롤 슬라이더 갱신 (con_knobs)
+            const knobIndex = index - 10;
+            this.con_knobs[knobIndex].value = value; // con_knobs의 객체 값 변경
+          }
+        }
+      } else if (data.agentType) {
+        const { agentType, response } = data;
+        console.log("agentType: ", agentType)
+        console.log(this.messages)
+        if (data.response === "[END]") {
+          this.isFetching = false;
+        } else {
+          if (
+            this.messages.length > 0 &&
+            this.messages[this.messages.length - 1].sender === "Bot" &&
+            this.messages[this.messages.length - 1].agentType === agentType
+          ) {
+            // msg block에 내용 업데이트
+            console.log("Updating...")
+            const lastMessage = this.messages[this.messages.length - 1];
+            lastMessage.text = response;
+          } else {
+            // msg block 새로 만듦
+            console.log("New block...")
+            this.messages.push({ sender: "Bot", text: response, agentType: agentType });
+          }
+          this.updateScroll(); // 메시지가 추가될 때마다 스크롤
+        }
+      } else {
+        console.warn("Unknown message format:", data);
       }
     };
 
