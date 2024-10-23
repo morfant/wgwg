@@ -16,7 +16,6 @@ from langchain_core.messages import AIMessage
 from langchain_core.runnables.config import RunnableConfig
 from pythonosc import udp_client
 
-synth_list = []
 
 # SuperCollider가 실행 중인 로컬 서버와 포트
 client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
@@ -30,6 +29,7 @@ if not os.path.exists(save_directory):
 app = FastAPI()
 
 # 웹소켓 클라이언트 목록
+chat_clients = []  # /ws/chat에 연결된 클라이언트 목록
 sc_clients = []  # /ws/sc에 연결된 클라이언트 목록
 
 # 정적 파일 경로를 '/static'으로 설정하고, 파일들이 저장된 디렉토리를 지정
@@ -41,7 +41,6 @@ graph = get_graph()
 configurable = {"thread_id": "1"}
 config = RunnableConfig(configurable=configurable, recursion_limit=100)
 # config = RunnableConfig(recursion_limit=100)
-researcher_index = 0
 
 # FOR TEST
 morse_test = False
@@ -87,11 +86,11 @@ async def handle_sc_message(data, websocket: WebSocket):
 
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
-    global researcher_index  # 전역 변수로서 접근을 명시
-    global synth_list
     global morse_test
 
     await websocket.accept()
+    chat_clients.append(websocket)  # 클라이언트 추가
+
 
     try:
         while True:
@@ -110,6 +109,8 @@ async def websocket_chat(websocket: WebSocket):
     
     except WebSocketDisconnect:
         print("WebSocket /ws/chat 연결이 종료되었습니다.")
+        chat_clients.remove(websocket)  # 클라이언트 제거
+
 
 async def handle_chat_message(data, websocket: WebSocket):
     global morse_idx
@@ -219,13 +220,18 @@ async def handle_chat_message(data, websocket: WebSocket):
                     for i in range(len(partial_message), len(response_message), chunk_size):
                         new_message = response_message[i:i+chunk_size]
                         partial_message += new_message
-                        # print("new_message: ", new_message)
-                        # print("new_message_unicode: ", ord(new_message))
-                        await websocket.send_json({"response": partial_message, "agentType": key})
+
+                        # await websocket.send_json({"response": partial_message, "agentType": key})
+                        # 모든 클라이언트에 메시지 전송
+                        await broadcast_to_all_chat_clients(
+                            {"response": partial_message, "agentType": key}
+                        )
+
                         await asyncio.sleep(0.075)  # 타이핑 딜레이
 
                 partial_message = ""
-                await websocket.send_json({"response": "[END]", "agentType": key})
+                await broadcast_to_all_chat_clients({"response": "[END]", "agentType": key})
+                # await websocket.send_json({"response": "[END]", "agentType": key})
 
         pprint.pprint("------------------------------------")
 
@@ -233,6 +239,16 @@ async def handle_chat_message(data, websocket: WebSocket):
     except Exception as e:
         print(f"WebSocket Error: {e}")
         await websocket.close()
+
+async def broadcast_to_all_chat_clients(message: dict):
+    """모든 /ws/chat 클라이언트에게 메시지를 전송합니다."""
+    for client in chat_clients:
+        try:
+            if client.client_state == WebSocketState.CONNECTED:
+                await client.send_json(message)
+        except Exception as e:
+            print(f"Error sending message to client: {e}")
+            
 
 # FastAPI 실행
 if __name__ == "__main__":
