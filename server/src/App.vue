@@ -103,7 +103,7 @@ export default {
       isFetching: false,
       isConnected: false,
       socket: null,
-      activeMenu: "WGWG 와글와글", // 기본 메뉴 제목
+      activeMenu: "WGWG ㅇㄱㅇㄱ", // 기본 메뉴 제목
       con_knobs: [
         { value: 20, label: "Reverb" },
         // { value: 20, label: "Duration" },
