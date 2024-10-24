@@ -39,7 +39,7 @@ sc_clients = []  # /ws/sc에 연결된 클라이언트 목록
 graph = get_graph()
 
 configurable = {"thread_id": "1"}
-config = RunnableConfig(configurable=configurable, recursion_limit=100)
+config = RunnableConfig(configurable=configurable, recursion_limit=200)
 # config = RunnableConfig(recursion_limit=100)
 researcher_index = 0
 
@@ -173,9 +173,8 @@ async def handle_chat_message(data, websocket: WebSocket):
             key = "Bot"
             message = ""    
             topic = ""
-            # topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
-            # topic = "AI로서 토론에 참여하고 있는 당신에게 인간은 어떤 도전과 변화에 직면하고 있다고 보이나요?, 그 속에서 인간의 본질은 어떻게 재정의될까요? 인간과 AI의 관계는 어떤 방향으로 나아갈 수 있을까요? 인간성에 새로운 질문을 던지며 그들의 본질을 위협하게 될까요?"
-            inputs = {"topic": topic, "messages":message, "feedback": "", "topic_changed": False } 
+            
+            inputs = {"topic": topic, "messages":message, "feedback": "", "topic_changed": False, "debate_end":False } 
 
             for output in graph.stream(inputs, config):
                 # print("output:", output)
@@ -212,7 +211,6 @@ async def handle_chat_message(data, websocket: WebSocket):
                             print(f"Error sending message: {e}")
                     morse_idx+=1 
 
-
                 # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
                 chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
                 if response_message != '':
@@ -222,7 +220,8 @@ async def handle_chat_message(data, websocket: WebSocket):
                         # print("new_message: ", new_message)
                         # print("new_message_unicode: ", ord(new_message))
                         await websocket.send_json({"response": partial_message, "agentType": key})
-                        await asyncio.sleep(0.075)  # 타이핑 딜레이
+                        # await asyncio.sleep(0.075)  # 타이핑 딜레이
+                        await asyncio.sleep(0.04)  # 타이핑 딜레이
 
                 partial_message = ""
                 await websocket.send_json({"response": "[END]", "agentType": key})
