@@ -12,24 +12,13 @@ from fastapi.websockets import WebSocketState  # WebSocketState 임포트
 import asyncio
 # from agent import get_graph  # 에이전트 가져오기
 from agent_multi import get_graph  # 에이전트 가져오기
-from langchain_core.messages import AIMessage
 from langchain_core.runnables.config import RunnableConfig
-from pythonosc import udp_client
 
-synth_list = []
-
-# SuperCollider가 실행 중인 로컬 서버와 포트
-client = udp_client.SimpleUDPClient("127.0.0.1", 57120)
-# 저장할 경로를 설정 (예: 'scd_files' 디렉토리)
-save_directory = "scd_files"
-
-# 디렉토리가 존재하지 않으면 생성
-if not os.path.exists(save_directory):
-    os.makedirs(save_directory)
 
 app = FastAPI()
 
 # 웹소켓 클라이언트 목록
+chat_clients = []  # /ws/chat에 연결된 클라이언트 목록
 sc_clients = []  # /ws/sc에 연결된 클라이언트 목록
 
 # 정적 파일 경로를 '/static'으로 설정하고, 파일들이 저장된 디렉토리를 지정
@@ -41,7 +30,6 @@ graph = get_graph()
 configurable = {"thread_id": "1"}
 config = RunnableConfig(configurable=configurable, recursion_limit=200)
 # config = RunnableConfig(recursion_limit=100)
-researcher_index = 0
 
 # FOR TEST
 morse_test = False
@@ -62,12 +50,10 @@ async def websocket_sc(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
-            print("Data: \n")
-            print(data)
+            print("Data: \n", data)
 
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
-                # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
             # 수신된 메시지 처리 비동기 작업
@@ -87,84 +73,101 @@ async def handle_sc_message(data, websocket: WebSocket):
 
 @app.websocket("/ws/chat")
 async def websocket_chat(websocket: WebSocket):
-    global researcher_index  # 전역 변수로서 접근을 명시
-    global synth_list
     global morse_test
 
     await websocket.accept()
+    chat_clients.append(websocket)  # 클라이언트 추가
+
 
     try:
         while True:
             data = await websocket.receive_json()
-            print("Raw Data: ")
-            print(data)
+            print("Raw Data: ", data)
 
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
-                # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
                 continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
 
+            # 버튼이나 슬라이더 메시지 처리
+            if data.get("type") in ["Button", "Slider"]:
+                print(f"Received {data['type']} event, broadcasting to other clients...")
 
-            # 수신된 메시지 처리 비동기 작업
-            asyncio.create_task(handle_chat_message(data, websocket))
+                # 현재 웹소켓을 제외한 모든 클라이언트에게 브로드캐스트
+                await broadcast_to_all_except_sender(websocket, data)
+            else:
+                # 다른 타입의 메시지도 처리 (예: 모스 코드)
+                asyncio.create_task(handle_chat_message(data, websocket))
+
     
     except WebSocketDisconnect:
         print("WebSocket /ws/chat 연결이 종료되었습니다.")
+        chat_clients.remove(websocket)  # 클라이언트 제거
+
 
 async def handle_chat_message(data, websocket: WebSocket):
     global morse_idx
     try:
-        if 'type' in data:
-            msg_type = data.get("type", "")
+        response_message = ""
+        partial_message = ""
 
-            if msg_type == "Test":
-                print("Test...")
-                morse_test = True
+        user_input = data.get("message", "")
+        key = "Bot"
+        message = ""    
+        topic = ""
+        # topic = "현재의 문명 수준을 유지하면서 기후 위기를 피하는 것은 가능할까요? 어느 수준의 희생과 타협은 불가피한 것일까요?"
+        # topic = "AI로서 토론에 참여하고 있는 당신에게 인간은 어떤 도전과 변화에 직면하고 있다고 보이나요?, 그 속에서 인간의 본질은 어떻게 재정의될까요? 인간과 AI의 관계는 어떤 방향으로 나아갈 수 있을까요? 인간성에 새로운 질문을 던지며 그들의 본질을 위협하게 될까요?"
+        inputs = {"topic": topic, "messages":message, "feedback": "", "topic_changed": False } 
 
-                if morse_test == True:
-                    for sc_client in sc_clients:
-                        try:
-                            if sc_client.client_state == WebSocketState.CONNECTED:
-                                print("sending from messages...")
-                                # message = { "type": "MorseCode", "index": data.get("index", ""), "value": [0, 1, 2, 0, 1]}
-                                message = { "type": "MorseCode", "group":data.get("group", 1), "index": data.get("index", 1), "value": "0120123101"}                                
-                                # sock.sendall(message.encode('utf-8'))  # 문자열을 바이트로 인코딩해 전송
-                                await sc_client.send_json(message)
-                            else:
-                                print("Client is not connected.")
-                        except Exception as e:
-                            print(f"Error sending message: {e}")
-                    morse_test = False
+        for output in graph.stream(inputs, config):
+            response_message = ''
+            response_morse = ''
 
-            elif msg_type == "Button":
-                # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
-                print("Button...")
+            for key, value in output.items():
+                print(f"{key}: {value}")
+                if 'messages' in value:
+                    for message in value['messages']:
+                        response_message = message.content  
+
+                elif 'morse' in value:     
+                    for morse in value['morse']:
+                        response_morse = morse.content        
+
+            # 0 = Dot, 1 = Dash, 2 = Space
+            if response_morse != '':
+                morse_idx%=5
+                # 리스트의 요소를 연결하고 각 요소 사이에 숫자 3 추가 : 문장 사이를 3으로 표현
+                joined_string = '3'.join(response_morse)
+                # print("joined_string: ", joined_string)
                 for sc_client in sc_clients:
                     try:
                         if sc_client.client_state == WebSocketState.CONNECTED:
-                            print("sending from buttons...")
-                            await sc_client.send_json(data)
+                            print("sending from messages...")
+                            message = { "type": "MorseCode", "group": 100, "index": morse_idx + 1, "value": joined_string}
+                            await sc_client.send_json(message)
                         else:
                             print("Client is not connected.")
                     except Exception as e:
                         print(f"Error sending message: {e}")
+                morse_idx+=1 
 
-            elif msg_type == "Slider":
-                # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
-                print("Slider...")
-                for sc_client in sc_clients:
-                    try:
-                        if sc_client.client_state == WebSocketState.CONNECTED:
-                            print("sending from sliders...")
-                            await sc_client.send_json(data)
-                        else:
-                            print("Client is not connected.")
-                    except Exception as e:
-                        print(f"Error sending message: {e}")
 
-        else:
-            response_message = ""
+            # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
+            chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
+            if response_message != '':
+                for i in range(len(partial_message), len(response_message), chunk_size):
+                    new_message = response_message[i:i+chunk_size]
+                    partial_message += new_message
+
+                    # await websocket.send_json({"response": partial_message, "agentType": key})
+                    # 모든 클라이언트에 메시지 전송
+                    await broadcast_to_all_chat_clients(
+                        {"response": partial_message, "agentType": key}
+                    )
+
+                    await asyncio.sleep(0.075)  # 타이핑 딜레이
+
             partial_message = ""
+<<<<<<< HEAD
 
             user_input = data.get("message", "")
             # print("user_input: ", user_input)
@@ -225,6 +228,10 @@ async def handle_chat_message(data, websocket: WebSocket):
 
                 partial_message = ""
                 await websocket.send_json({"response": "[END]", "agentType": key})
+=======
+            await broadcast_to_all_chat_clients({"response": "[END]", "agentType": key})
+            # await websocket.send_json({"response": "[END]", "agentType": key})
+>>>>>>> 2232d605484ad42dc78d7294e25f4d87fb068ed0
 
         pprint.pprint("------------------------------------")
 
@@ -232,6 +239,74 @@ async def handle_chat_message(data, websocket: WebSocket):
     except Exception as e:
         print(f"WebSocket Error: {e}")
         await websocket.close()
+
+async def broadcast_to_all_chat_clients(message: dict):
+    """모든 /ws/chat 클라이언트에게 토론 메시지를 전송합니다."""
+    for client in chat_clients:
+        try:
+            if client.client_state == WebSocketState.CONNECTED:
+                await client.send_json(message)
+        except Exception as e:
+            print(f"Error sending message to client: {e}")
+            
+
+async def broadcast_to_all_except_sender(sender: WebSocket, data: dict):
+    # Test, Button, Slider 이벤트를 ws/sc로 전달
+    msg_type = data.get("type", "")
+
+    if msg_type == "Test":
+        print("Test...")
+        morse_test = True
+
+        if morse_test == True:
+            # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
+            for sc_client in sc_clients:
+                try:
+                    if sc_client.client_state == WebSocketState.CONNECTED:
+                        print("sending from messages...")
+                        message = { "type": "MorseCode", "group":data.get("group", 1), "index": data.get("index", 1), "value": "0120123101"}                                
+                        await sc_client.send_json(message)
+                    else:
+                        print("Client is not connected.")
+                except Exception as e:
+                    print(f"Error sending message: {e}")
+            morse_test = False
+
+    elif msg_type == "Button":
+        # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
+        print("Button...")
+        for sc_client in sc_clients:
+            try:
+                if sc_client.client_state == WebSocketState.CONNECTED:
+                    print("sending from buttons...")
+                    await sc_client.send_json(data)
+                else:
+                    print("Client is not connected.")
+            except Exception as e:
+                print(f"Error sending message: {e}")
+
+    elif msg_type == "Slider":
+        # /ws/sc에 연결된 모든 클라이언트에게 메시지 전송
+        print("Slider...")
+        for sc_client in sc_clients:
+            try:
+                if sc_client.client_state == WebSocketState.CONNECTED:
+                    print("sending from sliders...")
+                    await sc_client.send_json(data)
+                else:
+                    print("Client is not connected.")
+            except Exception as e:
+                print(f"Error sending message: {e}")
+    
+    # 브라우저 UI 동기화를 위해 broadcast
+    """보낸 클라이언트를 제외한 모든 /ws/chat 클라이언트에게 메시지 전송."""
+    for client in chat_clients:
+        if client != sender and client.client_state == WebSocketState.CONNECTED:
+            try:
+                await client.send_json(data)
+            except Exception as e:
+                print(f"Error sending message to client: {e}")
+                
 
 # FastAPI 실행
 if __name__ == "__main__":
