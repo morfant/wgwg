@@ -153,7 +153,7 @@ class GraphState(TypedDict):
 
 ###LLM
 llm_translator = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
-llm_host = ChatOpenAI(temperature=0.2, streaming=True, model="gpt-4o")
+llm_host = ChatOpenAI(temperature=0.15, streaming=True, model="gpt-4o")
 llm_critic = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 # llm_01 = ChatAnthropic(model="claude-3-5-sonnet-20240620") #ANTHROPIC
 llm_01 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
@@ -161,8 +161,6 @@ llm_02 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 llm_03 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 llm_04 = ChatOpenAI(temperature=0.15, streaming=True, model="gpt-4o")
 llm_05 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
-
-
 
 #TRANSLATER
 translator_instructions = """ou are an expert translator specializing in translating Korean to English. 
@@ -694,7 +692,6 @@ debate_agent_instructions = """You are participating in a structured debate with
     Explore the topic from new and unexpected angles. Propose hypothetical scenarios, challenge underlying assumptions, and introduce nuanced perspectives that force others to reconsider their positions.
 
 """
-
 
 # - Use Strong Language:
 #     Employ confident and assertive language to strengthen your arguments and counterarguments.  
