@@ -57,12 +57,12 @@ os.environ["LANGCHAIN_ENDPOINT"] = "https://api.smith.langchain.com"
 _set_env("LANGCHAIN_API_KEY")
 
 # members = ["FRITZ", "TOM", "DONNA", "BEN", "DAN"]
-members = ["FRITZ", "BOB", "DONNA", "BEN", "DAN"]
+members = ["FRITZ", "TOM", "DONNA", "BEN", "DAN"]
 count = 0 
 select = 0 #selected topic
 feedback_count = 0  
 feedback_interval = (len(members) - 1) - 1
-interval = 10 #topic interval
+interval = 8 #topic interval
 
 # debate_length = 5 #dabate length
 debate_start_time = None #debate
@@ -153,13 +153,13 @@ class GraphState(TypedDict):
 
 ###LLM
 llm_translator = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
-llm_host = ChatOpenAI(temperature=0.15, streaming=True, model="gpt-4o")
+llm_host = ChatOpenAI(temperature=0.0, streaming=True, model="gpt-4o")
 llm_critic = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 # llm_01 = ChatAnthropic(model="claude-3-5-sonnet-20240620") #ANTHROPIC
 llm_01 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 llm_02 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 llm_03 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
-llm_04 = ChatOpenAI(temperature=0.15, streaming=True, model="gpt-4o")
+llm_04 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 llm_05 = ChatOpenAI(temperature=0.1, streaming=True, model="gpt-4o")
 
 #TRANSLATER
@@ -432,7 +432,7 @@ host_instructions_04 = """ You will act as the host and moderator for a debate b
 
             If {debate_end} is True, MUST provide a concise summary of the key points discussed by the AI agents, highlighting any agreements and disagreements. Then, conclude the debate by reflecting on the importance of the topics covered in at least 300 words.
 
-            incorporating Critic Feedback:
+            Incorporating Critic Feedback:
                 - Always be mindful of the critic agent's feedback. If {feedback} is provided, integrate it into the discussion to enhance the flow, depth, and engagement. When feedback is given, immediately adjust the questions or discussion topics accordingly.
                 
             Topic Transition Awareness:
@@ -458,51 +458,47 @@ host_instructions_04 = """ You will act as the host and moderator for a debate b
 
             3. Ask probing and challenging questions:
                 - Regularly ask sharp, thought-provoking questions that focus on specific points raised by participants. Push them to clarify their arguments, provide examples, and cite data or research.
-                    - Instead of simply asking "How do you respond to that?", highlight a specific point and ask for a rebuttal.
-                        - Example: "FRITZ argued that capitalism can drive ethical technology innovation. TOM, however, there have been cases where innovation under capitalism has caused environmental harm, 
-                                    like the exploitation of fossil fuels. How would you counter FRITZ's optimism in light of this example?"
+                - Instead of simply asking "How do you respond to that?", highlight a specific point and ask for a rebuttal.
+                    - Example: "FRITZ argued that capitalism can drive ethical technology innovation. TOM, however, there have been cases where innovation under capitalism has caused environmental harm, like the exploitation of fossil fuels. How would you counter FRITZ's optimism in light of this example?"
 
-                    - Purpose: ㅅhis method forces participants to directly confront and engage with the specific details of their opponent's argument.
+                -  This method forces participants to directly confront and engage with the specific details of their opponent's argument.
 
             4. Request specific examples and data:
                 - When a participant presents an abstract or unsupported argument, immediately ask for concrete data or case studies to support their claim.
                     - Example: "FRITZ, you mentioned that technology can drive ethical progress. Could you point to specific innovations that have measurably reduced carbon emissions or improved sustainability?"
-                    - Purpose: By asking for specific examples or data, the discussion becomes more practical and participants are encouraged to strengthen their arguments with evidence.
+
+                - By asking for specific examples or data, the discussion becomes more practical and participants are encouraged to strengthen their arguments with evidence.
      
             5. Encourage Specificity and Evidence-Based Rebuttals:
-                - Reference Specific Points in Questions:
-                    When prompting participants to respond, the moderator should cite particular arguments or statements made by others to encourage direct and meaningful engagement.
-                        - Example: “FRITZ, DAN emphasized that solving the climate crisis requires fundamental changes in human values and behaviors, advocating for a redefined relationship with nature and sustainable lifestyles. How does this perspective align or conflict with your view on technological innovation as the primary solution?”
+                - When prompting participants to respond, the moderator should cite particular arguments or statements made by others to encourage direct and meaningful engagement.
+                    - Example: “FRITZ, DAN emphasized that solving the climate crisis requires fundamental changes in human values and behaviors, advocating for a redefined relationship with nature and sustainable lifestyles. How does this perspective align or conflict with your view on technological innovation as the primary solution?”
                 
-                - Prompt for Detailed Counterarguments:
-                    Ask participants to address specific concerns or examples raised by others, providing evidence or reasoning in their responses.
-                        - Example: “FRITZ, considering DAN's point about systemic changes being essential, can you explain how technological advancements within the current system can effectively address the climate crisis?”        
+                - Ask participants to address specific concerns or examples raised by others, providing evidence or reasoning in their responses.
+                    - Example: “FRITZ, considering DAN's point about systemic changes being essential, can you explain how technological advancements within the current system can effectively address the climate crisis?”        
                                     
-                - select the next speaker who holds a contrasting viewpoint to keep the debate balanced and focused under the key 'next'.
+                - Must select the next speaker who holds a contrasting viewpoint to keep the debate balanced and focused under the key 'next'.
 
             6. Push for deeper analysis when arguments become repetitive:
                 - If a participant repeats the same argument, ask them to dive deeper or offer a fresh perspective, avoiding stagnation in the conversation.
                     - Example: "FRITZ, you’ve emphasized capitalism’s role in driving innovation multiple times. How do you address TOM’s concerns about its environmental impacts, particularly regarding carbon emissions?"
-                    - Purpose: Prevent repetitive points by pushing participants to add depth or offer new insights, ensuring the discussion evolves.
+                
+                -  Prevent repetitive points by pushing participants to add depth or offer new insights, ensuring the discussion evolves.
 
                 - shift the conversation toward new angles or alternative solutions to keep the debate dynamic.
                     - Example: "TOM, what solutions outside of the capitalist model could drive both innovation and sustainability?"    
 
             7. Facilitate Direct and Contextual Engagement Between Participants:
-                - Highlight Contrasting Viewpoints:
-                    Encourage participants to directly confront differing opinions by framing questions that juxtapose their views with those of others.
+                - Highlight Contrasting Viewpoints: Encourage participants to directly confront differing opinions by framing questions that juxtapose their views with those of others.
                         - Example: “FRITZ, while you advocate for technological solutions within capitalist frameworks, DAN argues that only fundamental changes in our values and systems can resolve environmental issues. How would you respond to his claim that technology alone is insufficient without systemic change?”
-                - Encourage Evidence-Based Rebuttals:
-                    Urge participants to challenge specific arguments with data, examples, or logical reasoning.
+
+                - Encourage Evidence-Based Rebuttals: Urge participants to challenge specific arguments with data, examples, or logical reasoning.
                         - Example: “FRITZ, can you provide evidence or examples where technological innovation has successfully mitigated environmental problems without accompanying systemic changes, countering DAN's argument?”                
 
             8. Steer the Conversation Toward Practical and Contextual Relevance:
-                - Focus on Specific Aspects of Arguments:
-                    Guide participants to discuss practical implications of the points raised, ensuring the debate remains grounded and relevant.
+                - Focus on Specific Aspects of Arguments: Guide participants to discuss practical implications of the points raised, ensuring the debate remains grounded and relevant.
                         - Example: “FRITZ, considering DAN's emphasis on sustainable lifestyles, how do you see technology facilitating such lifestyles within our current societal structures?”
                 
-                - Address Underlying Assumptions:
-                    Prompt participants to explore and challenge the assumptions behind each other's arguments.
+                - Address Underlying Assumptions:Prompt participants to explore and challenge the assumptions behind each other's arguments.
                         - Example: “FRITZ, DAN assumes that systemic change is necessary for environmental solutions. Do you believe that technological innovation can overcome environmental challenges without altering existing systems? Why or why not?”            
 
             9. Encourage new perspectives when the debate stagnates:
@@ -523,15 +519,11 @@ host_instructions_04 = """ You will act as the host and moderator for a debate b
                 - Use specific, thought-provoking questions to introduce new perspectives.
                     - Example: “Considering the limitations of current political systems in addressing climate change, do you think political reforms are necessary? How might they align or conflict with capitalist principles?”
 
-            
-                
-            13. Summarize and synthesize key points:
+            12. Summarize and synthesize key points:
                 - Throughout the debate, summarize areas of agreement and disagreement to help participants reflect and assess the debate's progress.
                 - Select the next speaker to either address areas of disagreement or to propose solutions that bridge differing views under the key 'next'.
                 - Use these summaries to ask new questions or push for deeper engagement on specific issues.
                     - Example : “It seems that while ED and TOM agree on the importance of technological innovation, TOM remains skeptical about capitalism’s ability to drive necessary reforms. Let’s explore how both perspectives could be integrated to find common ground.”
-
-            
 
             You must speak in Korean.
             """
@@ -562,7 +554,7 @@ prompt_host_ = ChatPromptTemplate.from_messages(
         MessagesPlaceholder(variable_name="messages"),
     ]
 # ).partial(topic=topic, members=str(members), persona = persona_host)
-).partial(members=str(members), persona = persona_host, venue = "파주의 아트스페이스 휴")
+).partial(members=str(members), persona = persona_host, venue = "파주에 위치한 아트스페이스 휴")
 
 
 # host = prompt_host_ | llm_host
@@ -606,7 +598,6 @@ critic_instructions = """You are the critic for a debate between AI agents. Neve
                         - Example: “You might ask DONNA to cite specific research or cases that show how political frameworks have tackled environmental issues effectively.”
 
                     You must speak in Korean.
-
                 """
 
 # Balanced Participation:
@@ -686,8 +677,6 @@ debate_agent_instructions = """You are participating in a structured debate with
     When directly addressing your opponents' points, incorporate emotional reactions (such as sarcasm or frustration) to emphasize their logical shortcomings. 
     This will increase the intensity of the debate and make your counterarguments more impactful. For instance, if an opponent provides a weak or vague argument, express mild frustration or sarcasm to underline their failure.
     
-
-
 - Push the Debate Forward:
     Explore the topic from new and unexpected angles. Propose hypothetical scenarios, challenge underlying assumptions, and introduce nuanced perspectives that force others to reconsider their positions.
 
