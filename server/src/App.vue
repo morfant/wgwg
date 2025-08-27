@@ -3,7 +3,7 @@
     <!-- 왼쪽 텍스트 영역 -->
     <div class="chat-section">
       <h1>{{ activeMenu }}</h1>
-      <div class="chat-box">
+      <div class="chat-box" @scroll="handleScroll">
         <div
           v-for="(message, index) in messages"
           :key="index"
@@ -103,7 +103,7 @@ export default {
       isFetching: false,
       isConnected: false,
       socket: null,
-      activeMenu: "WGWG ㅇㄱㅇㄱ", // 기본 메뉴 제목
+      activeMenu: "와글와글 - 언어로 포화된 여기", // 기본 메뉴 제목
       con_knobs: [
         { value: 20, label: "Reverb" },
         // { value: 20, label: "Duration" },
@@ -113,7 +113,7 @@ export default {
       selectedGroup: 1, // 현재 선택된 그룹 (1 ~ 5)
       tempo: Array(5).fill(50), // 각 그룹별 tempo 값 초기화
       volume: Array(5).fill(50), // 각 그룹별 volume 값 초기화
-
+      autoScroll: true, // 기본값은 자동 스크롤 ON
     };
   },
   methods: {
@@ -188,7 +188,6 @@ export default {
     },
     sendMessage() {
       console.log("sendMessage()");
-
       // 메시지 전송 로직
       if (this.userInput.trim() === "") return;
       this.messages.push({
@@ -205,6 +204,7 @@ export default {
       return marked.parse(text);
     },
     updateScroll() {
+      if (!this.autoScroll) return; // 사용자가 스크롤 중이면 자동 스크롤 중단
 
       const chatBox = this.$el.querySelector('.chat-box');
       if (chatBox) {
@@ -212,6 +212,15 @@ export default {
       }
       // 브라우저 창 전체를 스크롤하여 페이지의 맨 아래로 이동
       //window.scrollTo(0, document.body.scrollHeight);
+    },
+
+    handleScroll() {
+    const chatBox = this.$el.querySelector('.chat-box');
+    if (!chatBox) return;
+
+    const nearBottom = chatBox.scrollHeight - chatBox.scrollTop - chatBox.clientHeight < 50;
+    // 맨 아래 근처면 autoScroll 켜기, 아니면 끄기
+    this.autoScroll = nearBottom;
     },
   },
   mounted() {
@@ -310,6 +319,12 @@ export default {
       // ping 메시지 전송 중지
       clearInterval(this.pingInterval);
     };
+  },
+  beforeUnmount() {
+    const chatBox = this.$el.querySelector('.chat-box');
+    if (chatBox) {
+      chatBox.removeEventListener("scroll", this.handleScroll);
+    }
   },
 };
 </script>

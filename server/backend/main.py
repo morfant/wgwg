@@ -1,9 +1,7 @@
 # main.py
-
 import random
 import os
 import re
-# import json
 import pprint
 # from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -26,14 +24,35 @@ sc_clients = []  # /ws/sc에 연결된 클라이언트 목록
 
 # 컴파일된 그래프 가져오기
 graph = get_graph()
-
 configurable = {"thread_id": "1"}
 config = RunnableConfig(configurable=configurable, recursion_limit=200)
 # config = RunnableConfig(recursion_limit=100)
 
+#FOR ASYNC QUEUE
+typing_queue: asyncio.Queue = asyncio.Queue()
+send_lock = asyncio.Lock()
+
 # FOR TEST
 morse_test = False
 morse_idx = 0
+
+
+async def typing_worker():
+    while True:
+        msg, agent_type = await typing_queue.get()
+        try:
+            await typing_effect(msg, agent_type)
+        except Exception as e:
+            print(f">> typing_worker error: {e}", flush=True)
+        finally:
+            typing_queue.task_done()
+
+
+@app.on_event("startup")
+async def startup_event():
+    # 서버 시작 시 워커 실행
+    asyncio.create_task(typing_worker())
+
 
 @app.websocket("/ws/sc")
 async def websocket_sc(websocket: WebSocket):
@@ -45,7 +64,7 @@ async def websocket_sc(websocket: WebSocket):
 
     # 클라이언트를 목록에 추가
     sc_clients.append(websocket)
-    print("sc_clients: ", sc_clients)
+    print(">> sc_clients: ", sc_clients)
 
     try:
         while True:
@@ -78,11 +97,10 @@ async def websocket_chat(websocket: WebSocket):
     await websocket.accept()
     chat_clients.append(websocket)  # 클라이언트 추가
 
-
     try:
         while True:
             data = await websocket.receive_json()
-            print("Raw Data: ", data)
+            print(">> Raw Data: ", data)
 
             # "heartbeat" 메시지인지 확인
             if data.get("heartbeat") == "ping":
@@ -98,26 +116,84 @@ async def websocket_chat(websocket: WebSocket):
                 # 다른 타입의 메시지도 처리 (예: 모스 코드)
                 asyncio.create_task(handle_chat_message(data, websocket))
 
-    
     except WebSocketDisconnect:
-        print("WebSocket /ws/chat 연결이 종료되었습니다.")
+        print(">> WebSocket /ws/chat 연결이 종료되었습니다.")
         chat_clients.remove(websocket)  # 클라이언트 제거
+
+
+async def typing_effect(full_message: str, agent_type: str):
+    try:
+        print(">> typing starts: {}".format(agent_type),flush=True)
+        partial_message = ""
+        # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
+        chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
+
+        for i in range(0, len(full_message), chunk_size):
+            partial_message += full_message[i:i+chunk_size]
+            await broadcast_to_all_chat_clients({"response": partial_message, "agentType": agent_type})
+            await asyncio.sleep(0.039)  # 타이핑 딜레이
+    except Exception as e:
+        print(f">> typing_effect error: {e}", flush=True)       
 
 
 async def handle_chat_message(data, websocket: WebSocket):
     global morse_idx
+
     try:
-        response_message = ""
-        partial_message = ""
-
-        user_input = data.get("message", "")
+        user_comment = False
         key = "Bot"
-        message = ""    
+        message = ""  
         topic = ""
-        # inputs = {"topic": topic, "messages":message, "feedback": "", "topic_changed": False } 
-        inputs = {"topic": topic, "messages":message, "feedback": "", "topic_changed": False, "debate_end":False } 
 
-        for output in graph.stream(inputs, config):
+        #user comment를 위한 로직
+        #while True:
+            # data = await websocket.receive_json()
+            #     # "heartbeat" 메시지인지 확인
+            #     if data.get("heartbeat") == "ping":
+            #         # await websocket.send_json({"response": "pong", "agentType": "heartbeat"})
+            #         continue  # "heartbeat" 메시지일 경우, 아래의 로직을 건너뜁니다.
+
+        typing_tasks = []  # 혹시 나중에 gather 하고 싶을 때를 위해 저장
+        user_input = data.get("message", "")
+
+        response_message = ""
+        # partial_message = ""
+
+        #user comment를 위한 로직
+        if  user_comment is False: #처음###
+            print(">> 토론 시작")
+
+            inputs = {
+            "topic": topic, 
+            "messages":message, 
+            "feedback": "", 
+            "user_comment": user_input, 
+            "topic_changed": False, 
+            "debate_end":False } 
+        #         inputs = {"request": user_input}
+
+        else:   #유저 코멘트 ###   
+            print(">> 말씀하신 내용을 사회자에게 전달합니다. {}".format(user_input))
+
+            graph.update_state(
+                        config,
+                        # The updated values to provide. The messages in our `State` are "append-only", meaning this will be appended
+                        # to the existing state. We will review how to update existing messages in the next section!
+                        {"user_comment": user_input},
+            )
+
+            inputs = None
+            user_comment = False
+        
+        next_node = None
+
+        # for output in graph.stream(inputs, config):
+        async for output in graph.astream(inputs, config):
+            ##user feedback을 위해 추가 중
+            snapshot = graph.get_state(config)
+            next_node = snapshot.next
+            #
+
             response_message = ''
             response_morse = ''
 
@@ -126,11 +202,11 @@ async def handle_chat_message(data, websocket: WebSocket):
                 if 'messages' in value:
                     for message in value['messages']:
                         response_message = message.content  
-
                 elif 'morse' in value:     
                     for morse in value['morse']:
                         response_morse = morse.content        
-
+            
+            #FOR MORSE
             # 0 = Dot, 1 = Dash, 2 = Space
             if response_morse != '':
                 morse_idx%=5
@@ -149,95 +225,37 @@ async def handle_chat_message(data, websocket: WebSocket):
                         print(f"Error sending message: {e}")
                 morse_idx+=1 
 
-            # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
-            chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
+            #FOR TYPING EFFECT
             if response_message != '':
-                for i in range(len(partial_message), len(response_message), chunk_size):
-                    new_message = response_message[i:i+chunk_size]
-                    partial_message += new_message
+                print(">> response_messgae is not empty and typing starts", flush=True)
 
-                    # await websocket.send_json({"response": partial_message, "agentType": key})
-                    # 모든 클라이언트에 메시지 전송
-                    await broadcast_to_all_chat_clients(
-                        {"response": partial_message, "agentType": key}
-                    )
+                #NEW
+                await typing_queue.put((response_message, key))    
+                await asyncio.sleep(0)  # 이벤트 루프에 제어권을 잠깐 넘겨서 task 실행 기회 부여
 
-                    await asyncio.sleep(0.02)  # 타이핑 딜레이
+        pprint.pprint("----------------------END OF GRAPH--------------------------")     
 
-            partial_message = ""
-      
-        # # print("user_input: ", user_input)
-        # # inputs = {"messages": user_input}
-        # # print("inputs: ", inputs)
-
-        # for output in graph.stream(inputs, config):
-        #     # print("output:", output)
-        #     # response_data = output
-        #     # print(response_data)
-        #     response_message = ''
-        #     response_morse = ''
-
-        #     for key, value in output.items():
-        #         print(f"{key}: {value}")
-        #         if 'messages' in value:
-        #             for message in value['messages']:
-        #                 response_message = message.content  
-
-        #         elif 'morse' in value:     
-        #             for morse in value['morse']:
-        #                 response_morse = morse.content        
-
-        #     # 0 = Dot, 1 = Dash, 2 = Space
-        #     if response_morse != '':
-        #         morse_idx%=5
-        #         # 리스트의 요소를 연결하고 각 요소 사이에 숫자 3 추가 : 문장 사이를 3으로 표현
-        #         joined_string = '3'.join(response_morse)
-        #         # print("joined_string: ", joined_string)
-        #         for sc_client in sc_clients:
-        #             try:
-        #                 if sc_client.client_state == WebSocketState.CONNECTED:
-        #                     print("sending from messages...")
-        #                     message = { "type": "MorseCode", "group": 100, "index": morse_idx + 1, "value": joined_string}
-        #                     await sc_client.send_json(message)
-        #                 else:
-        #                     print("Client is not connected.")
-        #             except Exception as e:
-        #                 print(f"Error sending message: {e}")
-        #         morse_idx+=1 
-
-        #     # 타이핑 효과를 위해, 실시간으로 클라이언트에게 부분적으로 응답을 전송
-        #     chunk_size = 1  # 한 번에 보낼 글자의 수를 설정, 클수록 출력 빠름
-        #     if response_message != '':
-        #         for i in range(len(partial_message), len(response_message), chunk_size):
-        #             new_message = response_message[i:i+chunk_size]
-        #             partial_message += new_message
-        #             # print("new_message: ", new_message)
-        #             # print("new_message_unicode: ", ord(new_message))
-        #             await websocket.send_json({"response": partial_message, "agentType": key})
-        #             # await asyncio.sleep(0.075)  # 타이핑 딜레이
-        #             await asyncio.sleep(0.04)  # 타이핑 딜레이
-
-        #     partial_message = ""
-        #     await websocket.send_json({"response": "[END]", "agentType": key})
-
+        print(">> key:", key, flush=True)
+        user_comment = True
         await broadcast_to_all_chat_clients({"response": "[END]", "agentType": key})
-        # await websocket.send_json({"response": "[END]", "agentType": key})
-
         pprint.pprint("------------------------------------")
-
 
     except Exception as e:
         print(f"WebSocket Error: {e}")
         await websocket.close()
 
+
 async def broadcast_to_all_chat_clients(message: dict):
-    """모든 /ws/chat 클라이언트에게 토론 메시지를 전송합니다."""
-    for client in chat_clients:
-        try:
-            if client.client_state == WebSocketState.CONNECTED:
-                await client.send_json(message)
-        except Exception as e:
-            print(f"Error sending message to client: {e}")
+    # print(">> trying lock", flush=True)
+    async with send_lock:
+        # print(">> broadcasting to clients: ", message, flush=True)  # 로그
+        """모든 /ws/chat 클라이언트에게 토론 메시지를 전송합니다."""
+        for client in chat_clients:
+            try:
+                if client.client_state == WebSocketState.CONNECTED:
+                    await client.send_json(message)
+            except Exception as e:
+                print(f"Error sending message to client: {e}", flush=True)
             
 
 async def broadcast_to_all_except_sender(sender: WebSocket, data: dict):

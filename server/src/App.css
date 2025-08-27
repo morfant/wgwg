@@ -66,7 +66,7 @@ body {
 }
 
 h1 {
-  background-color: #4b8b9f; /* 상단 헤더 색상 */
+  background-color: #4c717e; /* 상단 헤더 색상 */
   color: white;
   padding: 15px;
   margin: 0;
@@ -78,7 +78,7 @@ h1 {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background-color: #f9f9f9; /* 채팅 박스 배경색 */
+  background-color: #fff2f2; /* 채팅 박스 배경색 */
 }
 
 .message {
@@ -95,39 +95,39 @@ h1 {
 }
 
 .message.User {
-  background-color: #75abe4; /* 사용자 메시지 색상 */
+  background-color: #6f98c3; /* 사용자 메시지 색상 */
   color: #fff;
 }
 
-.message.HOST {
-  background-color: #f7e4b6; /* 에이전트 메시지 색상 - 부드러운 노란색 */
+.message.host {
+  background-color: #d4d2b2; /* 에이전트 메시지 색상 - 부드러운 노란색 */
   color: #000; /* 글자 색상 - 검은색 */
 }
 
 .message.FRITZ {
-  background-color: #cc7f7f; /* 비평가 메시지 색상 - 부드러운 붉은색 */
+  background-color: #cd9b9b; 
   color: #fff; /* 글자 색상 - 흰색 */
 }
 
 
 .message.DONNA {
-  background-color: #7779c3; 
+  background-color: #686aa3; 
   color: #fff; 
 }
 
-.message.TOM {
-  background-color: #49a97f; 
+.message.BOB {
+  background-color: #568f76; 
   color: #fff; 
 }
 
 .message.BEN {
-  background-color: #376b8e; /* 연구 디렉터 메시지 색상 - 부드러운 녹색 */
+  background-color: #2a658d; /* 연구 디렉터 메시지 색상 - 부드러운 녹색 */
   color: #ffffff; /* 글자 색상 - 검은색 */
 }
 
 
-.message.DAN {
-  background-color: #a94997; 
+.message.JOHN {
+  background-color: #833d3c; 
   color: #fff; 
 }
 
