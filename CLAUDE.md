@@ -4,11 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "와글와글" (WaglWagl), a multi-agent debate system that facilitates AI-powered discussions between multiple agents with real-time WebSocket communication to both a Vue.js frontend and SuperCollider audio synthesis environment.
+This is "와글와글" (WaglWagl), a multi-agent debate system that facilitates AI-powered discussions between multiple agents with real-time WebSocket communication to both a Next.js frontend and SuperCollider audio synthesis environment.
 
 ## Common Commands
 
-### Frontend Development (Vue.js)
+### Frontend Development (Next.js)
+```bash
+cd client
+npm install           # Install dependencies
+npm run dev           # Run dev server on port 4000
+npm run build         # Build for production
+npm start             # Start production server on port 4000
+npm run lint          # Lint TypeScript/React code
+```
+
+### Legacy Frontend (Vue.js - kept for reference)
 ```bash
 cd server
 yarn install          # Install dependencies
@@ -41,9 +51,14 @@ uvicorn main:app --reload --port 4001
   - Uses various LLMs (OpenAI, Anthropic, XAI) for agent personalities
   - Manages debate duration, topics, and participant interactions
 
-### Frontend (server/)
+### Frontend (client/)
+- **Next.js 15 application** with TypeScript and real-time chat interface
+- **app/page.tsx**: Main page component handling WebSocket communication, message rendering, and UI controls
+- **components/Slider.tsx**: Reusable slider component for control inputs
+
+### Legacy Frontend (server/)
 - **Vue 3 application** with real-time chat interface
-- **src/App.vue**: Main component handling WebSocket communication, message rendering, and UI controls
+- **src/App.vue**: Main component handling WebSocket communication
 - Features:
   - Real-time message display with markdown rendering
   - Agent-specific message styling
@@ -63,7 +78,8 @@ uvicorn main:app --reload --port 4001
 - **LangGraph**: Orchestrates multi-agent debate workflow
 - **LangChain**: Provides LLM integration and prompt engineering
 - **FastAPI**: WebSocket server for real-time communication
-- **Vue 3**: Frontend framework for interactive UI
+- **Next.js 15**: Frontend framework with TypeScript for interactive UI
+- **React 19**: UI library for component-based architecture
 - **SuperCollider**: Real-time audio synthesis
 - **OSC Protocol**: Inter-process communication for audio control
 
