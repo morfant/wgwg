@@ -2,9 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { marked } from 'marked';
-import dynamic from 'next/dynamic';
-
-const Slider = dynamic(() => import('@/components/Slider'), { ssr: false });
+import Slider from '@/components/Slider';
 
 interface Message {
   sender: string;
