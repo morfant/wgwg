@@ -50,14 +50,14 @@ export default function ChatLobby() {
       name: '일반 토론',
       description: '자유로운 주제로 대화하세요',
       icon: Users,
-      variant: 'secondary' as const,
+      variant: 'default' as const,
     },
     {
       id: 'philosophy',
       name: '철학 토론',
       description: '깊이 있는 철학적 담론',
       icon: Brain,
-      variant: 'outline' as const,
+      variant: 'default' as const,
     }
   ];
 
