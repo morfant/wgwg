@@ -5,15 +5,15 @@
 
 cd server
 
-yarn install
+pnpm install
 
-yarn serve
+pnpm serve
 
 
 
 ## backend
 
-cd server/backend
+cd backend
 
 python main.py
 

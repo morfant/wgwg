@@ -39,4 +39,4 @@ Argument:
 
 
 var 를 이용해 지역변수를 정의 할 때는 반드시 함수가 시작되자마자 진행해줘.
-Buffer로 불러올 오디오 샘플이 필요할 때는 /Users/giy/WGWG/server/backend/static/sample.wav 를 사용해줘.
+Buffer로 불러올 오디오 샘플이 필요할 때는 /Users/giy/WGWG/backend/static/sample.wav 를 사용해줘.
