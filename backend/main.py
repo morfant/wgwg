@@ -1,17 +1,14 @@
 # main.py
-import random
-import os
-import re
+import asyncio
 import pprint
+
 # from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.websockets import WebSocketState  # WebSocketState 임포트
-
-import asyncio
-# from agent import get_graph  # 에이전트 가져오기
-from agent_multi import get_graph  # 에이전트 가져오기
 from langchain_core.runnables.config import RunnableConfig
 
+# from agent import get_graph  # 에이전트 가져오기
+from agent_with_chat import get_graph  # 에이전트 가져오기
 
 app = FastAPI()
 
