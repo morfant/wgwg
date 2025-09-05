@@ -995,19 +995,13 @@ def agent_05_(state):
 
 def user_participate(state):
     print(">> user comment" + '\n')
-    user_comment = state.get("user_comment", "")
-
-    # if user_feedback.lower() == "ok":
-    #     print(">> 피드백없이 다음 단계로 넘어갑니다.")
-    #     return {"proceed": True, "user_feedback": ""}
-    # else: 
 
     # Load external chat history from Redis (room id from env)
     room_id = os.getenv("CHAT_ROOM_ID", CHAT_ROOM_ID)
     chat_history = load_redis_history(room_id)
 
     print(">> 사회자 에이전트에게 전달합니다. (with Redis chat history)")
-    return {"proceed": False, "user_comment": user_comment, "chat_history": chat_history}
+    return {"proceed": False, "user_comment": chat_history}
 
 
 #EDGE

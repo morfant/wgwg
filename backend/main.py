@@ -128,7 +128,7 @@ async def typing_effect(full_message: str, agent_type: str):
         for i in range(0, len(full_message), chunk_size):
             partial_message += full_message[i:i+chunk_size]
             await broadcast_to_all_chat_clients({"response": partial_message, "agentType": agent_type})
-            await asyncio.sleep(0.039)  # 타이핑 딜레이
+            await asyncio.sleep(0.0)  # 타이핑 딜레이
     except Exception as e:
         print(f">> typing_effect error: {e}", flush=True)       
 
