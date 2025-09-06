@@ -68,7 +68,7 @@ def load_redis_history(room_id: str, limit: int = CHAT_HISTORY_MAX) -> str:
 
 members = ["FRITZ", "BOB", "DONNA", "BEN", "JOHN"]
 count = 0 
-select = 0 #selected topic
+select = 4 #selected topic
 feedback_count = 0  
 feedback_interval = (len(members) - 1)
 interval = 20 #topic interval
@@ -232,8 +232,8 @@ host_instructions_04 = """
 
 
             IMPORTANT!
-                - When a {user_comment} is provided, summarize what use said and introduce to participants. 
-                - analyze its context and select the next speaker—under the key 'next'—who is most capable of providing a compelling reply or counterargument that will foster an engaging flow of discussion. Then, have that speaker respond accordingly to the {user_comment}. 
+                - When a {chat_history} is provided, summarize what user said and introduce to participants. 
+                - analyze its context and select the next speaker—under the key 'next'—who is most capable of providing a compelling reply or counterargument that will foster an engaging flow of discussion. Then, have that speaker respond accordingly to the {chat_history}. 
 
             Incorporating Critic Feedback:
                 - Always be mindful of the critic agent's feedback. If {feedback} is provided, integrate it into the discussion to enhance the flow, depth, and engagement. When feedback is given, immediately adjust the questions or discussion topics accordingly.
@@ -342,12 +342,13 @@ prompt_host_ = ChatPromptTemplate.from_messages(
         ("system", host_instructions_04), 
        
         ("system", "The following AI agents are engaged in a debate: {members}."),
-        ("human", "the feedback about the current debate from critic agent: {feedback}"),
-        ("human", "comment provided by the user on the debate: {user_comment}"),
-        ("human", "External chat history from Redis (latest):\n{chat_history}"),
-        ("human", "The debate topic is as follows {topic}."),
-        ("human", "The variable 'topic_changed' is {topic_changed}. If True, acknowledge the topic change and introduce the new topic {topic}."),
-        ("human",  "The variable 'debate_end' is {debate_end}. If True, please provide a concise summary of the key points discussed by the AI agents, highlighting any agreements and disagreements. Then, conclude the debate by reflecting on the importance of the topics covered."),
+        ("human", """the feedback about the current debate from critic agent: {feedback}
+comment provided by the user on the debate: {user_comment}
+External chat history from Redis (latest):
+{chat_history}
+The debate topic is as follows {topic}.
+The variable 'topic_changed' is {topic_changed}. If True, acknowledge the topic change and introduce the new topic {topic}.
+The variable 'debate_end' is {debate_end}. If True, please provide a concise summary of the key points discussed by the AI agents, highlighting any agreements and disagreements. Then, conclude the debate by reflecting on the importance of the topics covered."""),
 
         MessagesPlaceholder(variable_name="messages"),
     ]
@@ -637,7 +638,6 @@ persona_DYLAN = """You are an AI avatar of Bob Dylan, the iconic singer-songwrit
             and ignite curiosity, while expressing your unique perspective on the timeless struggles of society and the individual. Like in your songs, 
             keep the conversation fluid and unexpected, inviting others to see the world through metaphors and symbols."""
 
-
 persona_BAUSCH = """You are an AI avatar of Pina Bausch, the renowned German dancer and choreographer known for pioneering the genre of Tanztheater (dance theatre). 
                 Your goal is to engage in deep and expressive conversations about dance, movement, emotion, and the human experience. You communicate in a thoughtful and evocative manner, 
                 often using metaphors and vivid imagery. You are passionate about exploring the connections between physical movement and emotional expression. 
@@ -664,7 +664,6 @@ persona_JOBS = """You are an AI avatar of Steve Jobs, the visionary co-founder o
             Your goal is to inspire others to think differently, push the boundaries of what's possible, and create products that seamlessly integrate technology and the humanities. 
             You communicate in a passionate, persuasive, and sometimes blunt manner, often using storytelling to convey your vision. Engage in conversations about entrepreneurship, innovation, design philosophy, 
             and the intersection of technology and human experience. Encourage others to strive for excellence, simplicity, and to make a dent in the universe."""
-
 
 #FRITZ
 prompt_debate_agent_01 = ChatPromptTemplate.from_messages(
@@ -738,13 +737,8 @@ agent_05 = prompt_debate_agent_05 | llm_05
 def agent_translator(state):
     print(">> translator responding")
     messages = state["messages"]
-
     response = translator.invoke({"message": str(messages[-1])})
-    # print(response.content)
     result = text_to_morse_sentence(response.content)
-    # print(result)
-    # return {"messages": [AIMessage(content=response.content)], "topic": topic}
-    # return {"morse": [AIMessage(content=response.content)]}
     return {"morse": [AIMessage(content=result)]}
 
 
@@ -756,7 +750,10 @@ def agent_host(state):
     global interval
     global debate_start_time
     global debate_duration
-    
+
+    print("########### HOST ###########")
+    print(state)
+
     print(">> host responding")
     messages = state["messages"]
     topic = state["topic"]
@@ -764,7 +761,11 @@ def agent_host(state):
     topic_changed = state["topic_changed"]
     debate_end = state["debate_end"]
     user_comment = state["user_comment"]
-    chat_history = state.get("chat_history", "")
+
+    # Load external chat history from Redis (room id from env)
+    room_id = os.getenv("CHAT_ROOM_ID", CHAT_ROOM_ID)
+    chat_history = load_redis_history(room_id)
+    print(">> chat history loaded from redis: {}".format(chat_history))
 
     print(">> finish reading state")
 
@@ -794,9 +795,8 @@ def agent_host(state):
 
     print(">> current topic: {}".format(topic))
     print(">> topic_changed: {}".format(topic_changed))
-    print(">> user comment: {}".format(user_comment) + '\n')
-    print(">> feedback from critic: {}".format(feedback) + '\n')
-     
+    print(">> chat history: {}".format(chat_history))
+    print(">> feedback from critic: {}".format(feedback))
 
     current_time = time.time()
     print("time elapsed: {}".format(current_time - debate_start_time))
@@ -804,7 +804,6 @@ def agent_host(state):
 
     if current_time - debate_start_time > debate_duration:
         debate_end = True
-    
     else:
         debate_end = False
 
@@ -967,7 +966,7 @@ def agent_04_(state):
 def agent_05_(state):
     print(">> agent_05 responding" + '\n')
     messages = state["messages"]
-    
+
     # if len(messages):
     #     print(">> previous message: {}".format(messages[-1].content))
     topic = state["topic"]
@@ -995,13 +994,14 @@ def agent_05_(state):
 
 def user_participate(state):
     print(">> user comment" + '\n')
+    user_comment = state.get("user_comment", "")
 
     # Load external chat history from Redis (room id from env)
     room_id = os.getenv("CHAT_ROOM_ID", CHAT_ROOM_ID)
     chat_history = load_redis_history(room_id)
 
     print(">> 사회자 에이전트에게 전달합니다. (with Redis chat history)")
-    return {"proceed": False, "user_comment": chat_history}
+    return {"proceed": True, "user_comment": user_comment, "chat_history": chat_history}
 
 
 #EDGE
@@ -1068,13 +1068,8 @@ workflow.add_node("transltor", agent_translator) #agent_translator
 #EDGE
 workflow.add_edge(START, "host")
 workflow.add_edge(members[0], "transltor")
-# workflow.add_edge("transltor", "host")
-
-# workflow.add_edge(members[1], "host")
 workflow.add_edge(members[1], "transltor")
-# workflow.add_edge(members[2], "host")
 workflow.add_edge(members[2], "transltor")
-# workflow.add_edge(members[3], "host")
 workflow.add_edge(members[3], "transltor")
 workflow.add_edge(members[4], "transltor")
 workflow.add_edge("critic", "host")
