@@ -17,7 +17,7 @@ export default function ChatLobby() {
   const [summaries, setSummaries] = useState<Record<string, RoomSummary>>({});
   const [dynamicRooms, setDynamicRooms] = useState<string[]>([]);
 
-  const BACKEND_URL = process.env.NEXT_PUBLIC_CHAT_BACKEND_URL || 'http://localhost:8001';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_CHAT_BACKEND_URL || 'http://localhost:4001';
 
   const createRoom = () => {
     if (roomName.trim()) {

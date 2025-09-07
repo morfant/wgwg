@@ -22,7 +22,7 @@ export default function ChatRoom() {
   const roomId = params.id as string;
   const searchParamName = searchParams.get('name');
   const [roomName, setRoomName] = useState<string>(searchParamName || roomId);
-  const BACKEND_URL = process.env.NEXT_PUBLIC_CHAT_BACKEND_URL || 'http://localhost:8001';
+  const BACKEND_URL = process.env.NEXT_PUBLIC_CHAT_BACKEND_URL || 'http://localhost:4001';
   
   const [nickname, setNickname] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -41,7 +41,8 @@ export default function ChatRoom() {
       return;
     }
 
-    ws.current = new WebSocket(`ws://localhost:8001/ws/${roomId}/${nicknameToUse}`);
+    const wsUrl = BACKEND_URL.replace(/^http/, 'ws');
+    ws.current = new WebSocket(`${wsUrl}/ws/${roomId}/${nicknameToUse}`);
 
     ws.current.onopen = () => {
       console.log(`WebSocket connected to room ${roomId}`);
