@@ -3,20 +3,45 @@
 
 ## client
 
-cd server
+```shell
+cd client
 
 pnpm install
 
-pnpm serve
-
+pnpm dev
+```
 
 
 ## backend
 
+```shell
+pip install -r requirements.txt
+python main.py
+```
+
+
+```shell
 cd backend
 
-python main.py
+// 1. 가상환경 생성
+uv venv
 
-or
+// 2. 가상환경 활성화
+// Windows
+source .venv/Scripts/activate
+or 
+// Linux or Mac
+source .venv/bin/activate
 
-uvicorn main:app --reload --port 4001
+// 3. 패키지 설치
+uv pip install -r requirements.txt
+
+// 4. 실행
+uv run main.py
+```
+
+## docker
+
+```shell
+docker compose up -d
+```
