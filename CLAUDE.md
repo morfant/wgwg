@@ -21,15 +21,15 @@ npm run lint          # Lint TypeScript/React code
 ### Legacy Frontend (Vue.js - kept for reference)
 ```bash
 cd server
-yarn install          # Install dependencies
-yarn serve            # Run dev server on port 4000
-yarn build            # Build for production
-yarn lint             # Lint Vue/JavaScript code
+pnpm install          # Install dependencies
+pnpm serve            # Run dev server on port 4000
+pnpm build            # Build for production
+pnpm lint             # Lint Vue/JavaScript code
 ```
 
 ### Backend Development (FastAPI/Python)
 ```bash
-cd server/backend
+cd backend
 pip install -r requirements.txt    # Install Python dependencies
 python main.py                      # Run backend server
 # OR
@@ -38,7 +38,7 @@ uvicorn main:app --reload --port 4001
 
 ## Architecture
 
-### Backend (server/backend/)
+### Backend (backend/)
 - **main.py**: FastAPI WebSocket server managing multiple client connections
   - `/ws/chat`: WebSocket endpoint for chat clients (Vue frontend)
   - `/ws/sc`: WebSocket endpoint for SuperCollider clients

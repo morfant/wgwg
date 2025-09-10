@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv pip install:*)",
+      "Bash(python:*)",
+      "Bash(uvicorn:*)",
+      "Read(/C:\\Projects\\08.wgwg\\05.Projects\\wgwg\\client\\app/**)",
+      "Bash(mkdir:*)",
+      "Read(/C:\\Projects\\08.wgwg\\05.Projects\\wgwg\\client/**)",
+      "Read(/C:\\Projects\\08.wgwg\\05.Projects\\wgwg\\client/**)",
+      "Read(/C:\\Projects\\08.wgwg\\05.Projects\\wgwg\\client/**)",
+      "Read(/C:\\Projects\\08.wgwg\\05.Projects\\wgwg\\client\\lib/**)",
+      "Read(/C:\\Projects\\08.wgwg\\05.Projects\\wgwg\\client/**)",
+      "Read(/C:\\Projects\\08.wgwg\\05.Projects\\wgwg\\client/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

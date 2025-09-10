@@ -3,22 +3,22 @@
 ## 프론트엔드
 ### Project setup
 ```
-yarn install
+pnpm install
 ```
 
 ### Compiles and hot-reloads for development(Test를 위해서는 여기까지만 하면 됩니다)
 ```
-yarn serve 
+pnpm serve 
 ```
 
 ### Compiles and minifies for production
 ```
-yarn build
+pnpm build
 ```
 
 ### Lints and fixes files
 ```
-yarn lint
+pnpm lint
 ```
 
 ### Customize configuration
@@ -49,7 +49,7 @@ pm2 restart all // pm2가 관리하는 모든 프로세스 재시작
 
 pm2 delete <name> // 특정 프로세스 삭제(정지)
 
-pm2 start yarn --name "front" -- serve // web server 실행
+pm2 start pnpm --name "front" -- serve // web server 실행
 
 // backend 폴더로 이동한 후에
 Pm2 start ecosystem.config.js // backend 실행

@@ -41,7 +41,7 @@ Wrap both the SynthDef and Pdef within a single parentheses block so they can be
 
 - If you use `Demand`, avoid `inf` as the repeat count and ensure the `trig` argument is an audio-rate UGen.
 - Define local variables with `var` at the beginning of the function.
-- If a sample is needed, use `/Users/giy/WGWG/server/backend/static/sample.wav` as the file path.
+- If a sample is needed, use `/Users/giy/WGWG/backend/static/sample.wav` as the file path.
 
 ### Output Format
 

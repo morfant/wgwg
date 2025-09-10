@@ -1,41 +1,24 @@
 import os
-import time
 import re
-from typing import Annotated, Literal, Sequence, TypedDict
-from typing import Optional
+import time
+from typing import Annotated, TypedDict
 from typing import List
+from typing import Literal
+from typing import Optional
+
+from dotenv import load_dotenv
+from langchain_community.adapters.openai import convert_message_to_dict
+from langchain_core.messages import AIMessage
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_openai import ChatOpenAI
+from langchain_xai import ChatXAI
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+# from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 
 # Data model
-from typing import Annotated, Sequence, TypedDict
-import operator
-
-from typing import Annotated, Sequence, TypedDict
-from dotenv import load_dotenv
-
-# from langchain_core.pydantic_v1 import BaseModel, Field
-from pydantic import BaseModel,Field
-from langchain_core.messages import BaseMessage
-from langchain_core.messages import HumanMessage
-from langchain_core.messages import AIMessage
-from langchain_core.prompts import PromptTemplate
-
-from langchain.schema import Document
-from requests.exceptions import HTTPError
-from langchain_community.adapters.openai import convert_message_to_dict
-
-from langgraph.graph.message import add_messages
-from langgraph.graph import StateGraph, START, END
-
-from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_xai import ChatXAI
-
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain_core.output_parsers import StrOutputParser
-from langchain import hub
-
-from langchain_core.runnables.config import RunnableConfig
-from langgraph.checkpoint.memory import MemorySaver
 
 
 # .env 파일 로드
