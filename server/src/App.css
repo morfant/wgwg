@@ -120,6 +120,18 @@ h1 {
   color: #fff; 
 }
 
+.message.punchliner {
+  background-color: #568f76; 
+  color: #fff; 
+}
+
+
+.message.simplifier {
+  background-color: #cd9b9b; 
+  color: #fff; 
+}
+
+
 .message.BEN {
   background-color: #2a658d; /* 연구 디렉터 메시지 색상 - 부드러운 녹색 */
   color: #ffffff; /* 글자 색상 - 검은색 */
@@ -130,6 +142,10 @@ h1 {
   background-color: #833d3c; 
   color: #fff; 
 }
+
+
+
+
 
 .message.reporter {
   background-color: #d4b8a5; /* 리포터 메시지 색상 - 부드러운 주황색 */
