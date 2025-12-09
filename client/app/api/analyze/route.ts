@@ -6,7 +6,7 @@ export async function POST(req: Request) {
     const { text } = await req.json();
 
     const { object } = await generateObject({
-        model: openai('gpt-4o'),
+        model: openai('gpt-5.1'),
         schema: z.object({
             nodes: z.array(z.object({
                 id: z.string(),

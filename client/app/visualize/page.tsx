@@ -130,6 +130,7 @@ export default function VisualizePage() {
             }
 
             const result = await response.json();
+            console.log("Analysis result:", result);
             updateGraph(result);
 
         } catch (error) {
